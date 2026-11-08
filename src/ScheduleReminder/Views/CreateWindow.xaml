@@ -1,0 +1,656 @@
+<Window x:Class="ScheduleReminder.Views.CreateWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        Title="新建日程"
+        Width="650" Height="720"
+        MinWidth="520" MinHeight="575"
+        WindowStyle="None" AllowsTransparency="True" ResizeMode="CanResize"
+        Background="Transparent" ShowInTaskbar="True" UseLayoutRounding="True">
+
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="0" ResizeBorderThickness="6"
+                            GlassFrameThickness="0" CornerRadius="0" />
+    </shell:WindowChrome.WindowChrome>
+    
+    <Window.Resources>
+        <!-- 字段标签：13px -->
+        <Style x:Key="FieldLabel13" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+            <Setter Property="FontFamily" Value="{DynamicResource AppFont}" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+
+        <!-- 计数（0/12、0/500）：12px -->
+        <Style x:Key="CounterText" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource TextNoteBrush}" />
+            <Setter Property="FontFamily" Value="{DynamicResource AppFont}" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="HorizontalAlignment" Value="Right" />
+        </Style>
+
+        <!-- 注释小字：10px -->
+        <Style x:Key="Note10" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource TextNoteBrush}" />
+            <Setter Property="FontFamily" Value="{DynamicResource AppFont}" />
+            <Setter Property="FontSize" Value="9.5" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Margin" Value="0,0,0,0" />
+        </Style>
+
+        <!-- 输入框：高 40、圆角 4、背景/描边跟随主题（ControlFillBrush / BorderWeakBrush） -->
+        <Style x:Key="MaterialInput" TargetType="TextBox">
+            <Setter Property="Background" Value="{DynamicResource ControlFillBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+            <Setter Property="CaretBrush" Value="{DynamicResource TextPrimaryBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderWeakBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="FontFamily" Value="{DynamicResource AppFont}" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Padding" Value="2,0" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4">
+                                <!-- 显隐属性显式绑定：让 TextBox 上写的
+                                 VerticalScrollBarVisibility / HorizontalScrollBarVisibility 真正生效 -->
+                                <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                          VerticalScrollBarVisibility="{TemplateBinding VerticalScrollBarVisibility}"
+                                          HorizontalScrollBarVisibility="{TemplateBinding HorizontalScrollBarVisibility}" />
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                <Trigger Property="IsFocused" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource FocusBorderBrush}" />
+                                </Trigger>
+                                <!-- 禁用淡出：与 CheckBox / ComboBox 对齐，统一 0.5 -->
+                                <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.5" />
+                                </Trigger>
+                                </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!--
+            变体 1：右侧带图标的输入框（日期 / 时间）
+            右边留 14 像素给日期 / 时间图标按钮，否则文字会被图标压住。
+            用 BasedOn 继承上面的通用样式，只改 Padding 一项，避免重复写颜色字体。
+        -->
+        <Style x:Key="MaterialInputWithIcon" TargetType="TextBox"
+               BasedOn="{StaticResource MaterialInput}">
+            <Setter Property="Padding" Value="2,0,14,0" />
+        </Style>
+
+        <!--
+            变体 2：多行输入框（备注）
+            多行文本必须贴顶排，居中会很难看。
+        -->
+        <Style x:Key="MaterialInputMultiline" TargetType="TextBox"
+               BasedOn="{StaticResource MaterialInput}">
+            <Setter Property="VerticalContentAlignment" Value="Top" />
+            <Setter Property="Padding" Value="2,3" />
+        </Style>
+
+        <!-- 保存 / 取消：150×46、底/描边跟随主题（ControlFillBrush / BorderWeakBrush）、文字 15px、圆角 4 -->
+        <Style x:Key="OutlineButton" TargetType="Button">
+            <Setter Property="Width" Value="120" />
+            <Setter Property="Height" Value="40" />
+            <Setter Property="Background" Value="{DynamicResource ControlFillBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderWeakBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="FontFamily" Value="{DynamicResource AppFont}" />
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource BgHoverBrush}" />
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource TextPrimaryBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.5" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 框内右侧图标按钮（日期 / 时间 / 截止日期）：
+             继承 TitleBarButtonStyle 的模板与悬停行为（Bd 部件 + 悬停浅白层、无边框）。
+             之前没写模板 → 悬停套 WPF 默认按钮外观（系统强调色边框+底），与全程序悬停观感不一致（用户反馈）。 -->
+        <Style x:Key="InlineIconButton" TargetType="Button"
+               BasedOn="{StaticResource TitleBarButtonStyle}">
+            <Setter Property="Width" Value="40" />
+            <Setter Property="Height" Value="40" />
+            <Setter Property="FontSize" Value="15" />
+        </Style>
+
+        <!-- 时间滚轮（OPT-016①，对齐「时间选择器原型 · 方案 B」）：列表本体，无边框、隐藏滚动条。
+             CanContentScroll=False = 按像素滚动（而不是按"项"滚动）：
+             居中定位要按像素微调偏移，且首项/末项要靠内边距留白才能滚到正中间。 -->
+        <Style x:Key="WheelListBoxStyle" TargetType="ListBox">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+            <Setter Property="FontFamily" Value="{DynamicResource AppFont}" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="ScrollViewer.CanContentScroll" Value="False" />
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Hidden" />
+            <!-- 关闭虚拟化（只有 24 / 60 项）：容器全部生成后，滚到指定项 + 量位置是"立即生效"的，
+                 否则 ScrollIntoView 会被延迟到下一轮，首次打开居中会差两行（实测）。 -->
+            <Setter Property="VirtualizingStackPanel.IsVirtualizing" Value="False" />
+        </Style>
+
+        <!-- 滚轮项：固定 30 高、居中；选中 = 浅白底 + 满浓度文字（与居中高亮带呼应） -->
+        <Style x:Key="WheelItemStyle" TargetType="ListBoxItem">
+            <Setter Property="Height" Value="30" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+            <Setter Property="FontFamily" Value="{DynamicResource AppFont}" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="Bd" Background="Transparent" CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource BgHoverBrush}" />
+                                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!--
+            行内小文字按钮（现供「清空」使用）：**无边框**，继承 TitleBarButtonStyle 的模板与悬停行为
+            （Bd 部件 + 悬停浅白层 + 前景转满浓度），这里只保留行内尺寸与字号。
+            说明：「透明」/「跟随」两枚小按钮已按用户要求改为套用 NormalButtonStyle
+            （底色 + 1px 描边，与设置窗「恢复默认」同观感，见下方背景/字体颜色行），本样式不再服务于它们。
+        -->
+        <Style x:Key="RowTextButtonStyle" TargetType="Button"
+               BasedOn="{StaticResource TitleBarButtonStyle}">
+            <Setter Property="Height" Value="34" />
+            <Setter Property="FontSize" Value="10" />
+            <Setter Property="Padding" Value="6,0" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+    </Window.Resources>
+
+    <Border CornerRadius="12"
+            Background="{DynamicResource WindowBgBrush}"
+            BorderBrush="{DynamicResource BorderWeakBrush}" BorderThickness="1">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="34" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="60" />
+            </Grid.RowDefinitions>
+
+            <!-- ============ 标题栏 H=34 ============ -->
+            <Border Grid.Row="0" Background="Transparent" MouseLeftButtonDown="OnTitleBarMouseLeftButtonDown">
+                <Grid>
+                    <TextBlock x:Name="TitleText" Text="新建编辑" Margin="16,0,60,0"
+                               VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                               FontSize="13" FontWeight="SemiBold"
+                               FontFamily="{DynamicResource AppFont}"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <Button HorizontalAlignment="Right" Margin="0,0,6,0"
+                            Style="{StaticResource TitleBarCloseButtonStyle}" Click="OnCloseClick">
+                        <Path Data="{StaticResource IconClose}"
+                              Stroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
+                              StrokeThickness="1.5" Stretch="Uniform"
+                              Width="13" Height="13" SnapsToDevicePixels="True" />
+                    </Button>
+                </Grid>
+            </Border>
+
+            <!-- ============ 内容区：左右双列（整体包 ScrollViewer：纵向按需滚动、禁止横向滚动；
+                 内容放得下时不显示滚动条，仅窗口缩到内容溢出才出现，见 OPT-009） ============ -->
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <Grid Margin="24,16,24,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="300*" MinWidth="240" />
+                    <ColumnDefinition Width="20" />
+                    <ColumnDefinition Width="250*" MinWidth="200" />
+                </Grid.ColumnDefinitions>
+
+                <!-- ===== 左列（录入区）W=300 ===== -->
+                <StackPanel Grid.Column="0" Orientation="Vertical">
+
+                    <!-- 待办事项：放在标题输入框上方；只保留这一份 -->
+                    <Grid Margin="0,0,0,12">
+                        <TextBlock Text="列入待办事项" Style="{StaticResource FieldLabel13}"
+                                   FontWeight="SemiBold" HorizontalAlignment="Left" />
+                        <CheckBox x:Name="TodoCheck" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                    </Grid>
+
+                    <!-- 标题 -->
+                    <Grid>
+                        <TextBlock Text="标题（必填）" Style="{StaticResource FieldLabel13}" HorizontalAlignment="Left" />
+                        <TextBlock x:Name="TitleCounter" Text="0/12" Style="{StaticResource CounterText}" />
+                    </Grid>
+                    <TextBox x:Name="TitleBox" Height="40" MaxLength="12" Margin="0,8,0,0"
+                             Style="{StaticResource MaterialInput}"
+                             TextChanged="OnTitleTextChanged" />
+
+                    <!-- 日期 -->
+                    <TextBlock Text="起始日期" Style="{StaticResource FieldLabel13}" Margin="0,16,0,0" />
+                    <Grid Height="40" Margin="0,8,0,0">
+                        <TextBox x:Name="DateBox" Style="{StaticResource MaterialInputWithIcon}"
+                                 LostFocus="OnDateLostFocus" />
+                        <Button HorizontalAlignment="Right"
+                                Style="{StaticResource InlineIconButton}" Click="OnPickDateClick">
+                            <Path Data="{StaticResource IconCalendar}"
+                                  Stroke="{DynamicResource IconStrokeBrush}"
+                                  StrokeThickness="1.5" Stretch="Uniform"
+                                  Width="14" Height="14" SnapsToDevicePixels="True" />
+                        </Button>
+                    </Grid>
+                    <Popup x:Name="DatePopup" PlacementTarget="{Binding ElementName=DateBox}"
+                           Placement="Bottom" StaysOpen="False" AllowsTransparency="True">
+                        <Border Background="{DynamicResource PopupBgBrush}"
+                                BorderBrush="{DynamicResource BorderWeakBrush}" BorderThickness="1" Padding="4">
+                            <Calendar x:Name="DateCalendar" SelectedDatesChanged="OnDateCalendarSelected" />
+                        </Border>
+                    </Popup>
+
+                    <!-- 时间 -->
+                    <TextBlock Text="正点时间" Style="{StaticResource FieldLabel13}" Margin="0,16,0,0" />
+                    <Grid Height="40" Margin="0,8,0,0">
+                        <TextBox x:Name="TimeBox" Style="{StaticResource MaterialInputWithIcon}"
+                                 LostFocus="OnTimeLostFocus" />
+                        <!-- OPT-016①：点时钟图标弹自建「时 / 分」双列滚轮浮层（WPF 无原生 TimePicker） -->
+                        <Button HorizontalAlignment="Right"
+                                Style="{StaticResource InlineIconButton}" Click="OnPickTimeClick">
+                            <Path Data="{StaticResource IconClock}"
+                                  Stroke="{DynamicResource IconStrokeBrush}"
+                                  StrokeThickness="1.5" Stretch="Uniform"
+                                  Width="14.5" Height="14" SnapsToDevicePixels="True" />
+                        </Button>
+                    </Grid>
+                    <!-- 时间滚轮浮层：只回填 TimeBox，保存仍走底栏「保存」；浮层内无按钮、无提示文字。
+                         Opened：浮层真正参与布局之后再定位（此刻才量得到行高/视口高），
+                         否则居中计算拿不到尺寸，灰框会落在任意位置（每次打开都不一样）。 -->
+                    <Popup x:Name="TimePopup" PlacementTarget="{Binding ElementName=TimeBox}"
+                           Placement="Bottom" StaysOpen="False" AllowsTransparency="True"
+                           Opened="OnTimePopupOpened">
+                        <Border Background="{DynamicResource PopupBgBrush}"
+                                BorderBrush="{DynamicResource BorderWeakBrush}" BorderThickness="1"
+                                CornerRadius="4" Padding="12"
+                                KeyDown="OnTimePopupKeyDown">
+                            <StackPanel Orientation="Horizontal">
+                                <StackPanel Width="86" Margin="0,0,10,0">
+                                    <TextBlock Text="时" HorizontalAlignment="Center"
+                                               FontSize="11" FontFamily="{DynamicResource AppFont}"
+                                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                                    <Grid Height="150" Margin="0,4,0,0">
+                                        <ListBox x:Name="HourList" Height="150"
+                                                 Style="{StaticResource WheelListBoxStyle}"
+                                                 ItemContainerStyle="{StaticResource WheelItemStyle}"
+                                                 SelectionChanged="OnTimePartSelected"
+                                                 PreviewMouseWheel="OnTimeWheel" />
+                                        <!-- 居中高亮带：强调色描边 + 淡填充，不吃鼠标事件 -->
+                                        <Border Height="30" VerticalAlignment="Center" IsHitTestVisible="False"
+                                                BorderBrush="{DynamicResource AccentBrush}" BorderThickness="0,1"
+                                                Background="{DynamicResource AccentBrush}" Opacity="0.15" />
+                                    </Grid>
+                                </StackPanel>
+                                <StackPanel Width="86">
+                                    <TextBlock Text="分" HorizontalAlignment="Center"
+                                               FontSize="11" FontFamily="{DynamicResource AppFont}"
+                                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                                    <Grid Height="150" Margin="0,4,0,0">
+                                        <ListBox x:Name="MinuteList" Height="150"
+                                                 Style="{StaticResource WheelListBoxStyle}"
+                                                 ItemContainerStyle="{StaticResource WheelItemStyle}"
+                                                 SelectionChanged="OnTimePartSelected"
+                                                 PreviewMouseWheel="OnTimeWheel" />
+                                        <Border Height="30" VerticalAlignment="Center" IsHitTestVisible="False"
+                                                BorderBrush="{DynamicResource AccentBrush}" BorderThickness="0,1"
+                                                Background="{DynamicResource AccentBrush}" Opacity="0.15" />
+                                    </Grid>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </Popup>
+
+                    <!-- 备注 -->
+                    <Grid Margin="0,16,0,0">
+                        <TextBlock Text="备注" Style="{StaticResource FieldLabel13}" HorizontalAlignment="Left" />
+                        <TextBlock x:Name="NoteCounter" Text="0/500" Style="{StaticResource CounterText}" />
+                    </Grid>
+                    <TextBox x:Name="NoteBox" Height="121" MaxLength="500" Margin="0,8,0,0"
+                             AcceptsReturn="True" TextWrapping="Wrap"
+                             VerticalScrollBarVisibility="Auto"
+                             Style="{StaticResource MaterialInputMultiline}"
+                             TextChanged="OnNoteTextChanged" />
+
+                    <!-- 标签（自右列移入，紧随备注，间距与其他字段组一致） -->
+                    <TextBlock Text="标签" Style="{StaticResource FieldLabel13}" Margin="0,16,0,0" />
+                    <ComboBox x:Name="TagBox" Height="40" Margin="0,8,0,0"
+                              IsEditable="False" Style="{StaticResource MaterialCombo}"
+                              SelectionChanged="OnTagSelectionChanged" />
+
+                    <!-- 背景颜色 | 字体颜色（各带一枚次级小按钮：
+                         「透明」= 日程背景设为透明（BUG-002：取色弹窗已无「透明」选项，透明语义由该按钮承载）；
+                         「跟随」= 字体颜色回归系统文字颜色（等价于把该字段恢复为「未单独设置」）） -->
+                    <Grid Margin="0,16,0,0">
+                        <TextBlock Text="背景颜色" Style="{StaticResource FieldLabel13}" HorizontalAlignment="Left" />
+                        <TextBlock Text="字体颜色" Style="{StaticResource FieldLabel13}" HorizontalAlignment="Right" />
+                    </Grid>
+                    <Grid Margin="0,8,0,0">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                            <Button x:Name="BgSwatch" Width="72" Height="38"
+                                    Style="{StaticResource NormalButtonStyle}"
+                                    Cursor="Hand" Click="OnBgColorClick">
+                                <Rectangle x:Name="BgRect" Width="64" Height="30" RadiusX="3" RadiusY="3"
+                                           Fill="{StaticResource CheckerBrush}" />
+                            </Button>
+                            <Button Content="默认" Width="36" Height="38" Margin="4,0,0,0"
+                                    Style="{StaticResource NormalButtonStyle}"
+                                    FontSize="11"
+                                    ToolTip="日程背景透明化" Click="OnBgTransparentClick" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button x:Name="FontSwatch" Width="72" Height="38"
+                                    Style="{StaticResource NormalButtonStyle}"
+                                    Cursor="Hand" Click="OnFontColorClick">
+                                <Rectangle x:Name="FontRect" Width="64" Height="30" RadiusX="3" RadiusY="3"
+                                           Fill="{StaticResource CheckerBrush}" />
+                            </Button>
+                            <Button Content="默认" Width="36" Height="38" Margin="4,0,0,0"
+                                    Style="{StaticResource NormalButtonStyle}"
+                                    FontSize="11"
+                                    ToolTip="字体颜色跟随系统文字颜色" Click="OnFontFollowSystemClick" />
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+
+                <!-- ===== 右列（配置区）W=250 ===== -->
+                <StackPanel Grid.Column="2" Orientation="Vertical">
+
+                    <!-- 开启提醒总开关：勾选后下方「提醒设置区」才可用（与「重复提醒」模块同一结构） -->
+                    <Grid>
+                        <TextBlock Text="开启提醒" FontSize="13" FontWeight="SemiBold"
+                                   FontFamily="{DynamicResource AppFont}"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   VerticalAlignment="Center" HorizontalAlignment="Left" />
+                        <CheckBox x:Name="RemindCheck" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                  Checked="OnRemindCheckChanged" Unchecked="OnRemindCheckChanged" />
+                    </Grid>
+
+                    <!-- 提醒设置区（1px 描边矩形；边框固定 40% 透明度，不随内部控件启禁用变化） -->
+                    <Grid Margin="0,8,0,0">
+                        <Border Padding="14" BorderBrush="Transparent" BorderThickness="1">
+                        <StackPanel x:Name="RemindPanel" IsEnabled="{Binding IsChecked, ElementName=RemindCheck}">
+                            <!-- 与重复规则区同款收口：未勾选「开启提醒」时整块统一淡到 0.35 -->
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Style.Triggers>
+                                        <Trigger Property="IsEnabled" Value="False">
+                                            <Setter Property="Opacity" Value="0.35" />
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+
+                            <!-- 提前提醒时间：输入框自适应剩余宽度，「分钟」跟随其后 -->
+                            <TextBlock Text="提前提醒时间" Style="{StaticResource FieldLabel13}" />
+                            <Grid Margin="0,8,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="AdvanceBox" Grid.Column="0" Height="34"
+                                         Style="{StaticResource MaterialInput}"
+                                         PreviewTextInput="OnAdvancePreviewTextInput"
+                                         DataObject.Pasting="OnAdvancePasting"
+                                         LostFocus="OnAdvanceLostFocus" />
+                                <TextBlock Grid.Column="1" Text="分钟" Margin="12,0,0,0" VerticalAlignment="Center"
+                                           FontSize="13" FontFamily="{DynamicResource AppFont}"
+                                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                            </Grid>
+
+                            <!-- 提醒铃：复用与系统设置一致的音效文件选择器（列出 data\sound\ 音效 + 「无」） -->
+                            <TextBlock Text="提醒铃" Style="{StaticResource FieldLabel13}" Margin="0,16,0,0" />
+                            <ComboBox x:Name="SoundCombo" Height="34" Margin="0,8,0,0"
+                                      HorizontalAlignment="Stretch"
+                                      Style="{StaticResource MaterialCombo}" />
+                        </StackPanel>
+                        </Border>
+                        <Border BorderBrush="{DynamicResource BorderWeakBrush}"
+                                BorderThickness="1" Background="Transparent"
+                                Opacity="0.4" IsHitTestVisible="False" />
+                    </Grid>
+
+                    <!-- 重复提醒总开关 -->
+                    <Grid Margin="0,16,0,0">
+                        <TextBlock Text="重复提醒" FontSize="13" FontWeight="SemiBold"
+                                   FontFamily="{DynamicResource AppFont}"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   VerticalAlignment="Center" HorizontalAlignment="Left" />
+                        <CheckBox x:Name="RecurCheck" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                  Checked="OnRecurCheckChanged" Unchecked="OnRecurCheckChanged" />
+                    </Grid>
+
+                    <!-- 重复规则区（1px 描边矩形；边框固定 40% 透明度，不随内部控件启禁用变化） -->
+                    <Grid Margin="0,8,0,0">
+                        <Border Padding="14" BorderBrush="Transparent" BorderThickness="1">
+                        <StackPanel x:Name="RulePanel" IsEnabled="{Binding IsChecked, ElementName=RecurCheck}">
+                            <!-- OPT-016②：未勾选「重复提醒」时整块统一淡到 0.35。
+                                 WPF 默认的 IsEnabled 继承只会让部分内置控件变淡，
+                                 而显式钉死 Foreground 的 TextBlock 标签不变，看起来像"还能点"，故整块收口。 -->
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Style.Triggers>
+                                        <Trigger Property="IsEnabled" Value="False">
+                                            <Setter Property="Opacity" Value="0.35" />
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+
+                            <!-- 每周重复 -->
+                            <TextBlock Text="每周重复" Style="{StaticResource FieldLabel13}" />
+                            <Grid Margin="0,10,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <!-- 文字已拆出勾选框：改为「空勾选框 + 独立 TextBlock」。
+                                     FieldLabel13 把 Foreground 钉死，故禁用时文字不会被控件的自淡波及，
+                                     与「每年重复 / 每月重复」的文字保持同一亮度。 -->
+                                <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Margin="0,0,0,10">                                    
+                                    <CheckBox x:Name="DailyCheck" VerticalAlignment="Center" Click="OnDailyClick" />
+                                    <TextBlock Text="每天" Style="{StaticResource FieldLabel13}" Margin="6,0,0,0" />
+                                    </StackPanel>
+                                <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,10">
+                                    <CheckBox x:Name="WdMon" VerticalAlignment="Center" Click="OnWeekdayClick" />
+                                    <TextBlock Text="周一" Style="{StaticResource FieldLabel13}" Margin="6,0,0,0" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Horizontal" Margin="0,0,0,10">
+                                    <CheckBox x:Name="WdTue" VerticalAlignment="Center" Click="OnWeekdayClick" />
+                                    <TextBlock Text="周二" Style="{StaticResource FieldLabel13}" Margin="6,0,0,0" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Margin="0,0,0,10">
+                                    <CheckBox x:Name="WdWed" VerticalAlignment="Center" Click="OnWeekdayClick" />
+                                    <TextBlock Text="周三" Style="{StaticResource FieldLabel13}" Margin="6,0,0,0" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,10">
+                                    <CheckBox x:Name="WdThu" VerticalAlignment="Center" Click="OnWeekdayClick" />
+                                    <TextBlock Text="周四" Style="{StaticResource FieldLabel13}" Margin="6,0,0,0" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Grid.Column="2" Orientation="Horizontal" Margin="0,0,0,10">
+                                    <CheckBox x:Name="WdFri" VerticalAlignment="Center" Click="OnWeekdayClick" />
+                                    <TextBlock Text="周五" Style="{StaticResource FieldLabel13}" Margin="6,0,0,0" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="2" Grid.Column="0" Orientation="Horizontal">
+                                    <CheckBox x:Name="WdSat" VerticalAlignment="Center" Click="OnWeekdayClick" />
+                                    <TextBlock Text="周六" Style="{StaticResource FieldLabel13}" Margin="6,0,0,0" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal">
+                                    <CheckBox x:Name="WdSun" VerticalAlignment="Center" Click="OnWeekdayClick" />
+                                    <TextBlock Text="周日" Style="{StaticResource FieldLabel13}" Margin="6,0,0,0" />
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- 每年重复 -->
+                            <Grid Margin="0,10,0,0">
+                                <TextBlock Text="每年重复" Style="{StaticResource FieldLabel13}" HorizontalAlignment="Left" />
+                                <CheckBox x:Name="YearlyCheck" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                            </Grid>
+                            <TextBlock Text="每年同一天重复，当年无该日则不再重复" Style="{StaticResource Note10}" />
+
+                            <!-- 每月重复 -->
+                            <Grid Margin="0,10,0,0">
+                                <TextBlock Text="每月重复" Style="{StaticResource FieldLabel13}" HorizontalAlignment="Left" />
+                                <CheckBox x:Name="MonthlyCheck" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                            </Grid>
+                            <TextBlock Text="每月同一天重复，当月无该日则不再重复" Style="{StaticResource Note10}" />
+
+                            <!-- 每月倒数第 N 天 -->
+                            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                <TextBlock Text="每月倒数第" Style="{StaticResource FieldLabel13}" />
+                                <ComboBox x:Name="LastNCombo" Width="64" Height="34" Margin="6,0,0,0"
+                                          Style="{StaticResource MaterialCombo}">
+                                    <ComboBoxItem Content="-" />
+                                    <ComboBoxItem Content="1" Tag="1" />
+                                    <ComboBoxItem Content="2" Tag="2" />
+                                    <ComboBoxItem Content="3" Tag="3" />
+                                    <ComboBoxItem Content="4" Tag="4" />
+                                    <ComboBoxItem Content="5" Tag="5" />
+                                    <ComboBoxItem Content="6" Tag="6" />
+                                    <ComboBoxItem Content="7" Tag="7" />
+                                </ComboBox>
+                                <TextBlock Text="天重复" Style="{StaticResource FieldLabel13}" Margin="6,0,0,0" />
+                            </StackPanel>
+
+                            <!-- 每月最后周 X -->
+                            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                <TextBlock Text="每月最后周" Style="{StaticResource FieldLabel13}" />
+                                <ComboBox x:Name="LastWdCombo" Width="64" Height="34" Margin="6,0,0,0"
+                                          Style="{StaticResource MaterialCombo}">
+                                    <ComboBoxItem Content="-" />
+                                    <ComboBoxItem Content="周一" Tag="1" />
+                                    <ComboBoxItem Content="周二" Tag="2" />
+                                    <ComboBoxItem Content="周三" Tag="3" />
+                                    <ComboBoxItem Content="周四" Tag="4" />
+                                    <ComboBoxItem Content="周五" Tag="5" />
+                                    <ComboBoxItem Content="周六" Tag="6" />
+                                    <ComboBoxItem Content="周日" Tag="0" />
+                                </ComboBox>
+                                <TextBlock Text="重复" Style="{StaticResource FieldLabel13}" Margin="6,0,0,0" />
+                            </StackPanel>
+
+                            <!-- 到期关闭重复 -->
+                                <Grid Margin="0,10,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="截止到" Style="{StaticResource FieldLabel13}"
+                                           VerticalAlignment="Center" Margin="0,0,6,0" />
+                                    <Grid Grid.Column="1" Height="34" Margin="0,0,4,0">
+                                        <TextBox x:Name="UntilBox" Style="{StaticResource MaterialInputWithIcon}"
+                                                 LostFocus="OnUntilLostFocus" />
+                                        <Button HorizontalAlignment="Right" Width="30" Height="30" Margin="0,0,0,0"
+                                            Style="{StaticResource InlineIconButton}" Click="OnPickUntilClick">
+                                            <Path Data="{StaticResource IconCalendar}"
+                                              Stroke="{DynamicResource IconStrokeBrush}"
+                                              StrokeThickness="1.3" Stretch="Uniform"
+                                              Width="13" Height="13" SnapsToDevicePixels="True" />
+                                        </Button>
+                                    </Grid>
+                                    <Button Grid.Column="2" Content="清空" Width="32" Height="34"
+                                        Style="{StaticResource NormalButtonStyle}" FontSize="10"
+                                        Click="OnClearUntilClick" />
+                                </Grid>
+                            <TextBlock Text="重复截止日期，空则永久生效" Style="{StaticResource Note10}" />
+
+                            <Popup x:Name="UntilPopup" PlacementTarget="{Binding ElementName=UntilBox}"
+                                   Placement="Bottom" StaysOpen="False" AllowsTransparency="True">
+                                <Border Background="{DynamicResource PopupBgBrush}"
+                                        BorderBrush="{DynamicResource BorderWeakBrush}" BorderThickness="1" Padding="4">
+                                    <Calendar x:Name="UntilCalendar" SelectedDatesChanged="OnUntilCalendarSelected" />
+                                </Border>
+                            </Popup>
+                        </StackPanel>
+                        </Border>
+                        <Border BorderBrush="{DynamicResource BorderWeakBrush}"
+                                BorderThickness="1" Background="Transparent"
+                                Opacity="0.4" IsHitTestVisible="False" />
+                    </Grid>
+                </StackPanel>
+                </Grid>
+            </ScrollViewer>
+
+            <!-- ============ 底栏 H=64（顶部 1px 分隔线） ============ -->
+            <Border Grid.Row="2" BorderBrush="{DynamicResource BorderWeakBrush}" BorderThickness="0,1,0,0">
+                <Grid Margin="48,0,48,0">
+                    <Grid.ColumnDefinitions>
+                        <!-- 底栏三列：左 保存 / 中 错误提示(更宽) / 右 取消，等高分列互不干扰 -->
+                        <ColumnDefinition Width="1*" />
+                        <ColumnDefinition Width="1.2*" />
+                        <ColumnDefinition Width="1*" />
+                    </Grid.ColumnDefinitions>
+                    <Button Grid.Column="0" x:Name="SaveBtn" Content="保存"
+                            Style="{StaticResource OutlineButton}" HorizontalAlignment="Right"
+                            VerticalAlignment="Center" Click="OnSaveClick" />
+                    <TextBlock Grid.Column="1" x:Name="ErrorText" Text=""
+                               HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center"
+                               TextWrapping="Wrap" MaxWidth="280"
+                               Foreground="{DynamicResource TextDangerBrush}"
+                               FontFamily="{DynamicResource AppFont}" FontSize="12">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Style.Triggers>
+                                    <Trigger Property="Text" Value="">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <Button Grid.Column="2" x:Name="CancelBtn" Content="取消"
+                            Style="{StaticResource OutlineButton}" HorizontalAlignment="Left"
+                            VerticalAlignment="Center" Click="OnCancelClick" />
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+</Window>

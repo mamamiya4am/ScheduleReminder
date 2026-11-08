@@ -1,0 +1,152 @@
+<Window x:Class="ScheduleReminder.Views.DetailWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="日程详细"
+        Width="420" Height="360"
+        WindowStyle="None" AllowsTransparency="True" ResizeMode="NoResize"
+        Background="Transparent" ShowInTaskbar="True"
+        WindowStartupLocation="CenterScreen" UseLayoutRounding="True">
+
+    <!--
+        日程详细内容窗（只读展示）
+        - 入口：提醒浮层的「日程详细」按钮
+        - 只展示文字、不可编辑；不可手动缩放（ResizeMode=NoResize），但随「界面大小」档位整体缩放
+        - 普通窗口、非模态；任务栏可见；标题栏只有关闭键（无最小化 / 最大化）
+    -->
+    <Grid>
+        <Border CornerRadius="{DynamicResource RadiusWindow}"
+                Background="{DynamicResource WindowBgSolidBrush}"
+                BorderThickness="0">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="34" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!-- ============ 自绘标题栏（仅关闭键） ============ -->
+            <Border Grid.Row="0" Background="Transparent"
+                    MouseLeftButtonDown="OnTitleBarMouseLeftButtonDown">
+                <Grid>
+                    <TextBlock x:Name="TitleText" Text="日程提醒" Margin="14,0,60,0"
+                               VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                               FontSize="14" FontWeight="SemiBold"
+                               FontFamily="{DynamicResource AppFont}"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <Button HorizontalAlignment="Right" Margin="0,0,6,0"
+                            Style="{StaticResource TitleBarCloseButtonStyle}" Click="OnCloseClick">
+                        <Path Data="{StaticResource IconClose}"
+                              Stroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
+                              StrokeThickness="1.5" Stretch="Uniform"
+                              Width="13" Height="13" SnapsToDevicePixels="True" />
+                    </Button>
+                </Grid>
+            </Border>
+
+            <!-- ============ 内容区（只读） ============ -->
+            <Grid Grid.Row="1" Margin="16,16,16,16">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <!-- ① 标题块：标题 + 右侧标签反色块 -->
+                <Border x:Name="TitleBlock" Grid.Row="0"
+                        CornerRadius="{DynamicResource RadiusRow}" Padding="10" Margin="0,0,0,16">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="ScheduleTitleText" Grid.Column="0" Text="" TextWrapping="Wrap"
+                                 TextAlignment="Left"
+                                 IsReadOnly="True" BorderThickness="0" Background="Transparent" Padding="0"
+                                 FontSize="{DynamicResource FontH3L}" FontWeight="SemiBold"
+                                 FontFamily="{DynamicResource AppFont}"
+                                 Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <Border x:Name="TagBlock" Grid.Column="1" Margin="10,0,0,0"
+                                Padding="8,2" CornerRadius="{DynamicResource RadiusChip}"
+                                VerticalAlignment="Center" Visibility="Collapsed">
+                            <TextBlock x:Name="TagValueText" Text="" VerticalAlignment="Center"
+                                       FontSize="{DynamicResource FontBodyS}"
+                                       FontFamily="{DynamicResource AppFont}"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <!-- ② 时间与提前提醒同一行；正点提醒时右列自然空出 -->
+                <Grid Grid.Row="1" Margin="0,0,0,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="时间：" Style="{StaticResource FieldLabelStyle}"
+                                   Height="Auto"
+                                   Foreground="{DynamicResource TextPastBrush}" />
+                        <TextBox x:Name="TimeValueText" Text="" VerticalAlignment="Center"
+                                 IsReadOnly="True" BorderThickness="0" Background="Transparent" Padding="0"
+                                 FontSize="{DynamicResource FontBody}"
+                                 FontFamily="{DynamicResource AppFont}"
+                                 Foreground="{DynamicResource TextPrimaryBrush}" />
+                    </StackPanel>
+
+                    <StackPanel x:Name="AdvancePanel" Grid.Column="1" Orientation="Horizontal"
+                                VerticalAlignment="Center" HorizontalAlignment="Right">
+                        <TextBlock Text="提前提醒：" Style="{StaticResource FieldLabelStyle}"
+                                   Height="Auto"
+                                   Foreground="{DynamicResource TextPastBrush}" />
+                        <TextBox x:Name="AdvanceValueText" Text="" VerticalAlignment="Center"
+                                 IsReadOnly="True" BorderThickness="0" Background="Transparent" Padding="0"
+                                 FontSize="{DynamicResource FontBody}"
+                                 FontFamily="{DynamicResource AppFont}"
+                                 Foreground="{DynamicResource TextPrimaryBrush}" />
+                    </StackPanel>
+                </Grid>
+
+                <!-- ③ 备注标题 -->
+                <TextBlock Grid.Row="2" Text="备注：" Style="{StaticResource FieldLabelStyle}"
+                           Height="Auto"
+                           Foreground="{DynamicResource TextPastBrush}"
+                           Margin="0,0,0,6" />
+
+                <!-- ④ 备注内容：填满剩余高度，超出由滚动条承载 -->
+                <Border Grid.Row="3" CornerRadius="{DynamicResource RadiusInput}" Padding="0">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled">
+                        <TextBox x:Name="NoteValueText" Text="" TextWrapping="Wrap"
+                                 IsReadOnly="True" BorderThickness="0" Background="Transparent" Padding="0"
+                                 FontSize="{DynamicResource FontBody}"
+                                 FontFamily="{DynamicResource AppFont}"
+                                 Foreground="{DynamicResource TextPrimaryBrush}" />
+                    </ScrollViewer>
+                </Border>
+
+                <!-- ⑤ 备注与重复之间的浅分隔线 -->
+                <Border Grid.Row="4" Height="1" Margin="0,12"
+                        Opacity="0.4" Background="{DynamicResource BorderWeakBrush}" />
+
+                <!-- ⑥ 重复规则 -->
+                <StackPanel Grid.Row="5" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="重复：" Style="{StaticResource FieldLabelStyle}"
+                               Height="Auto"
+                               Foreground="{DynamicResource TextPastBrush}" />
+                    <TextBox x:Name="RecurValueText" Text="" VerticalAlignment="Center"
+                             IsReadOnly="True" BorderThickness="0" Background="Transparent" Padding="0"
+                             FontSize="{DynamicResource FontBody}"
+                             FontFamily="{DynamicResource AppFont}"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                </StackPanel>
+            </Grid>
+        </Grid>
+        </Border>
+        <Border CornerRadius="{DynamicResource RadiusWindow}"
+                BorderBrush="{DynamicResource BorderWeakBrush}" BorderThickness="1"
+                Opacity="0.4" Background="Transparent" IsHitTestVisible="False" />
+    </Grid>
+</Window>

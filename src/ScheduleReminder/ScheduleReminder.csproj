@@ -1,0 +1,98 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>ScheduleReminder</RootNamespace>
+    <AssemblyName>ScheduleReminder</AssemblyName>
+    <!-- 程序名（显示名）：写进 exe 属性 →「产品名称」与「文件说明」；
+         文件本身（ScheduleReminder.exe）仍沿用 AssemblyName，不改文件名、不影响开机自启路径。 -->
+    <Product>日程提醒</Product>
+    <AssemblyTitle>日程提醒</AssemblyTitle>
+    <Company>日程提醒</Company>
+    <LangVersion>7.3</LangVersion>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <Deterministic>true</Deterministic>
+    <NeutralLanguage>zh-CN</NeutralLanguage>
+    <EnableDefaultPageItems>true</EnableDefaultPageItems>
+    <!-- EXE 文件图标：嵌入到生成的 ScheduleReminder.exe（资源管理器里看到的 exe 图标）。
+         必须是 ApplicationIcon —— SDK 风格工程只认这个属性；写成 Win32Icon 不会传给编译器，
+         结果是 exe 里没有图标（此前一直如此：界面/任务栏的图标是运行时读 Resources\ 下的文件，
+         所以只有"exe 文件本身的图标"受影响）。 -->
+    <ApplicationIcon>Resources\icon.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- AI 投递需要宽松 JSON：tag.sound 是字符串，schedule.sound 是对象。 -->
+    <Reference Include="System.Web" />
+    <Reference Include="System.Web.Extensions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 设置窗“生成 AI 操作规则”使用：规则文档嵌入程序，不随发布包单独携带。
+         源文件在项目 Resources 内，源码独立复制后仍可构建。 -->
+    <EmbeddedResource Include="Resources\AI操作功能规则.md"
+                      LogicalName="ScheduleReminder.AI操作规则.md" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 托盘图标 / EXE 文件图标：复制到输出目录（Resources\icon.ico） -->
+    <Content Include="Resources\icon.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <!-- 任务栏图标（窗口图标）：高清 PNG，单独随任务栏显示 -->
+    <Content Include="Resources\icon_taskbar.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
+  <!-- ============ 随包必备数据（BUG-001 / OPT-024）============
+       程序只读「exe 同目录的 data\」，而 data\ 属运行时数据、publish 不会自动带出。
+       故把工程内的 sound\ 与 data\holidays.json 显式声明为 Content，
+       通过 CopyToPublishDirectory 让 build 与 publish 都自动带上，彻底免去手动复制遗漏：
+         - sound\*.*            → 输出/发布到 data\sound\        （提醒音效）
+         - data\holidays.json   → 输出/发布到 data\holidays.json （公历节日，程序不再自建） -->
+  <ItemGroup>
+    <Content Include="sound\*.*" Link="data\sound\%(Filename)%(Extension)">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="data\holidays.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <!-- 已显式声明为 Content，不再作为默认 None 项重复出现 -->
+    <None Remove="sound\**\*.*" />
+    <None Remove="data\holidays.json" />
+  </ItemGroup>
+
+  <!-- 打包防漏校验：publish 结束后若缺少必备数据，或混入运行数据，直接失败。 -->
+  <Target Name="VerifyPublishPayload" AfterTargets="Publish">
+    <Error Condition="!Exists('$(PublishDir)data\holidays.json')"
+           Text="发布包缺少 data\holidays.json（随包必备，见 打包发布说明.md）" />
+    <Error Condition="!Exists('$(PublishDir)data\sound')"
+           Text="发布包缺少 data\sound\ 音效目录（随包必备，见 打包发布说明.md）" />
+    <Error Condition="Exists('$(PublishDir)data\settings.json')"
+           Text="发布包混入运行数据 data\settings.json，请使用干净发布目录" />
+    <Error Condition="Exists('$(PublishDir)data\schedules.json')"
+           Text="发布包混入运行数据 data\schedules.json，请使用干净发布目录" />
+    <Error Condition="Exists('$(PublishDir)data\tags.json')"
+           Text="发布包混入运行数据 data\tags.json，请使用干净发布目录" />
+    <Error Condition="Exists('$(PublishDir)data\backup')"
+           Text="发布包混入运行数据 data\backup\，请使用干净发布目录" />
+    <Error Condition="Exists('$(PublishDir)data\logs')"
+           Text="发布包混入运行日志 data\logs\，请使用干净发布目录" />
+    <Error Condition="Exists('$(PublishDir)data\ai')"
+           Text="发布包混入 AI 运行数据 data\ai\，请使用干净发布目录" />
+    <Error Condition="Exists('$(PublishDir)Resources\sound')"
+           Text="发布包混入废弃目录 Resources\sound，请使用干净发布目录" />
+  </Target>
+
+</Project>

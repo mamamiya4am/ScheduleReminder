@@ -1,0 +1,510 @@
+<Window x:Class="ScheduleReminder.Views.EditWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        xmlns:converters="clr-namespace:ScheduleReminder.Converters"
+        Title="日程编辑"
+        Width="930" Height="420" MinWidth="745" MinHeight="258"
+        WindowStyle="None" AllowsTransparency="True" ResizeMode="CanResize"
+        Background="Transparent" ShowInTaskbar="True"
+        UseLayoutRounding="True" SnapsToDevicePixels="True">
+
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="0" ResizeBorderThickness="6" GlassFrameThickness="0" CornerRadius="0" />
+    </shell:WindowChrome.WindowChrome>
+
+    <Window.Resources>
+        <converters:ScheduleBgBrushConverter x:Key="ScheduleBg" />
+        <converters:ScheduleFontBrushConverter x:Key="ScheduleFont" />
+        <converters:EmptyToDashConverter x:Key="EmptyToDash" />
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibility" />
+
+        <!-- 数据行：整行底色承载日程背景色（alpha 0.22）；过往行：底色减半、文字半透明，图标按钮不淡出 -->
+        <Style x:Key="ScheduleRowStyle" TargetType="DataGridRow">
+            <Setter Property="Background" Value="{Binding BgColor, Converter={StaticResource ScheduleBg}}" />
+            <Setter Property="Foreground" Value="{Binding FontColor, Converter={StaticResource ScheduleFont}}" />
+            <Setter Property="FontFamily" Value="{DynamicResource AppFont}" />
+            <Setter Property="FontSize" Value="{DynamicResource FontBody}" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
+            <Setter Property="ClipToBounds" Value="False" />
+            <!-- 每条日程上下留 4px 间距（左右 0），让行与行之间有空隙 -->
+            <Setter Property="Margin" Value="0,2" />
+            <Style.Triggers>
+                <!-- 过期：底色减半（转换器参数 0.5）；文字由 CellTextStyle 自行淡出。
+                     三个图标按钮不随之淡出 —— 整行 Opacity 会把按钮一并压暗，故不在行上设 Opacity -->
+                <DataTrigger Binding="{Binding IsPast}" Value="True">
+                    <Setter Property="Background" Value="{Binding BgColor, Converter={StaticResource ScheduleBg}, ConverterParameter=0.5}" />
+                </DataTrigger>
+                <!-- 校验失败 / 边界秒不满足：整行短暂淡红（内联编辑一律不弹窗提示） -->
+                <DataTrigger Binding="{Binding HasError}" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource BgDangerHoverBrush}" />
+                </DataTrigger>
+                <!--<Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{Binding BgColor, Converter={StaticResource ScheduleBg}}" />
+                </Trigger>-->
+            </Style.Triggers>
+        </Style>
+
+        <!-- 单元格：透明底（露出整行底色）、无网格线、无焦点虚框 -->
+        <Style x:Key="ScheduleCellStyle" TargetType="DataGridCell">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="ClipToBounds" Value="False" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="DataGridCell">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                SnapsToDevicePixels="True"
+                                ClipToBounds="False">
+                            <ContentPresenter VerticalAlignment="Center"
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              ClipToBounds="False" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 表头 -->
+        <Style x:Key="ScheduleHeaderStyle" TargetType="DataGridColumnHeader">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+            <Setter Property="FontFamily" Value="{DynamicResource AppFont}" />
+            <Setter Property="FontSize" Value="{DynamicResource FontBody}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Height" Value="30" />
+            <Setter Property="Padding" Value="6,0" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderWeakBrush}" />
+            <Setter Property="BorderThickness" Value="0,0,0,1" />
+        </Style>
+
+        <!-- 备注表头单独左对齐；其余表头统一居中 -->
+        <Style x:Key="ScheduleNoteHeaderStyle" TargetType="DataGridColumnHeader"
+               BasedOn="{StaticResource ScheduleHeaderStyle}">
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+        </Style>
+
+        <!-- 只读文本列（标题 / 标签 / 重复）：前景继承行（日程自定义色）；过往行以透明度淡出，颜色不变 -->
+        <Style x:Key="CellTextStyle" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{DynamicResource AppFont}" />
+            <Setter Property="FontSize" Value="{DynamicResource FontBody}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="6,0,6,0" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Foreground" Value="{Binding FontColor, Converter={StaticResource ScheduleFont}}" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsPast}" Value="True">
+                    <Setter Property="Opacity" Value="0.5" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- 单元格内编辑框（KeyDown 用于区分：Enter=提交 / Shift+Enter=换行不提交） -->
+        <Style x:Key="CellEditBoxStyle" TargetType="TextBox" BasedOn="{StaticResource InputBoxStyle}">
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="2,0" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="MinHeight" Value="24" />
+            <EventSetter Event="KeyDown" Handler="OnEditElementKeyDown" />
+        </Style>
+
+        <!-- 标签内联下拉：故意局部特化，高度与字号对齐 CellEditBoxStyle，
+             避免进入编辑态时下拉框突然变高、字号变大。 -->
+        <Style x:Key="TagEditComboStyle" TargetType="ComboBox"
+               BasedOn="{StaticResource MaterialCombo}">
+            <Setter Property="Height" Value="24" />
+            <Setter Property="MinHeight" Value="24" />
+            <Setter Property="FontSize" Value="{DynamicResource FontBody}" />
+            <Setter Property="Padding" Value="2,0" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+
+        <!--
+            行内小按钮（提醒 / 待办 / 编辑 / 删除）：整体并入标题栏按钮美学（OPT-022）。
+            BasedOn 继承 TitleBarButtonStyle 的模板（Bd 部件 + 悬停浅白层 + 前景转满浓度），
+            故这里只保留行内尺寸，不再自写底色 / 边框 / 悬停触发器；
+            图标 Stroke 改为绑 Foreground（见各键定义），随"系统文字色 78% 淡 → 悬停满浓度"同步变化。
+            按钮禁用只表示不可点击，不再改变外观；提醒图标的透明度由 Path 样式按状态决定。
+        -->
+        <Style x:Key="RowIconButtonStyle" TargetType="Button"
+               BasedOn="{StaticResource TitleBarButtonStyle}">
+            <Setter Property="Width" Value="28" />
+            <Setter Property="Height" Value="24" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+
+        <!-- 行内按钮：悬停底色改为当前日程的反色块（Tag 由 HoverBrush 传入） -->
+        <Style x:Key="ScheduleRowIconButtonStyle" TargetType="Button"
+               BasedOn="{StaticResource RowIconButtonStyle}">
+            <Setter Property="Tag" Value="{Binding HoverBrush}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <Border x:Name="HoverBg" CornerRadius="4"
+                                    Background="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"
+                                    Opacity="0" />
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="HoverBg" Property="Opacity" Value="1" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="HoverBg" Property="Opacity" Value="0.7" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Border CornerRadius="{DynamicResource RadiusWindow}"
+            Background="{DynamicResource WindowBgBrush}"
+            BorderBrush="{DynamicResource BorderWeakBrush}" BorderThickness="1">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="34" />
+                <RowDefinition Height="40" />
+                <RowDefinition Height="*" />
+                <!-- 原第 4 行（高 48）是底部「关闭」按钮所在行，按钮移除后该行一并取消 -->
+            </Grid.RowDefinitions>
+
+            <!-- ============ 自绘标题栏 ============ -->
+            <Border Grid.Row="0" Background="Transparent" MouseLeftButtonDown="OnTitleBarMouseLeftButtonDown">
+                <Grid>
+                    <TextBlock x:Name="TitleText" Text="日程编辑" Margin="14,0,90,0" VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis"
+                               FontSize="{DynamicResource FontBody}"
+                               FontFamily="{DynamicResource AppFont}"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,6,0">
+                        <Button Style="{StaticResource TitleBarIconButtonStyle}" Click="OnMinimizeClick">
+                            <Path Data="{StaticResource IconMinimize}"
+                                  Stroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
+                                  StrokeThickness="1.5" Stretch="Uniform"
+                                  Width="13" Height="13" SnapsToDevicePixels="True" />
+                        </Button>
+                        <!-- 最大化 / 还原：两个 Path 都在 XAML 里，C# 只改 Tag 切换显示（与主界面一致，见 OPT-013） -->
+                        <Button x:Name="MaximizeButton" Style="{StaticResource TitleBarIconButtonStyle}"
+                                ToolTip="最大化 / 还原" Click="OnMaximizeClick">
+                            <Grid Width="13" Height="13">
+                                <Path Data="{StaticResource IconMaximize}"
+                                      Stroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
+                                      StrokeThickness="1.5" Stretch="Uniform" SnapsToDevicePixels="True">
+                                    <Path.Style>
+                                        <Style TargetType="Path">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Tag}" Value="Maximized">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Path.Style>
+                                </Path>
+                                <Path Data="{StaticResource IconRestore}"
+                                      Stroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
+                                      StrokeThickness="1.5" Stretch="Uniform" SnapsToDevicePixels="True">
+                                    <Path.Style>
+                                        <Style TargetType="Path">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Tag}" Value="Maximized">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Path.Style>
+                                </Path>
+                            </Grid>
+                        </Button>
+                        <Button Style="{StaticResource TitleBarCloseButtonStyle}" Click="OnCloseClick">
+                            <Path Data="{StaticResource IconClose}"
+                                  Stroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
+                                  StrokeThickness="1.5" Stretch="Uniform"
+                                  Width="13" Height="13" SnapsToDevicePixels="True" />
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- ============ 工具条 ============ -->
+            <Border Grid.Row="1" Padding="8,0,8,0">
+                <!-- 只留文字，不再带日历图标 -->
+                <Button Width="80" Height="28" HorizontalAlignment="Left"
+                        Content="新建日程"
+                        Style="{StaticResource NormalButtonStyle}" Click="OnCreateClick" />
+            </Border>
+
+            <!-- ============ 主体：日程表格 ============ -->
+            <Grid Grid.Row="2" Margin="0,0,0,0">
+                <DataGrid x:Name="ScheduleGrid"
+                          AutoGenerateColumns="False"
+                          HeadersVisibility="Column"
+                          GridLinesVisibility="None"
+                          CanUserAddRows="False"
+                          CanUserDeleteRows="False"
+                          CanUserResizeRows="False"
+                          CanUserResizeColumns="False"
+                          CanUserReorderColumns="False"
+                          CanUserSortColumns="False"
+                          RowHeight="46"
+                          RowHeaderWidth="0"
+                          SelectionMode="Single"
+                          SelectionUnit="Cell"
+                          Background="Transparent"
+                          BorderThickness="0"
+                          ClipToBounds="False"
+                          RowStyle="{StaticResource ScheduleRowStyle}"
+                          CellStyle="{StaticResource ScheduleCellStyle}"
+                          ColumnHeaderStyle="{StaticResource ScheduleHeaderStyle}"
+                          ScrollViewer.VerticalScrollBarVisibility="Auto"
+                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                          BeginningEdit="OnBeginningEdit">
+
+                    <DataGrid.Columns>
+                        <!-- 1. 完成（勾选框；过期行也保留，仅补记；不联动提醒开关） -->
+                        <DataGridTemplateColumn Header="完成" Width="28*" SortMemberPath="IsDone" IsReadOnly="True" >
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <CheckBox IsChecked="{Binding IsDone, Mode=TwoWay}"
+                                              Style="{StaticResource ScheduleCheckBoxStyle}"
+                                              Tag="{Binding CheckBrush}"
+                                              Background="{Binding HoverBrush}"
+                                              HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              Checked="OnDoneChecked" Unchecked="OnDoneUnchecked" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <!-- 2. 时间：模板列 + OneWay 编辑框，保留双击直接改 -->
+                        <DataGridTemplateColumn Header="时间" Width="36*" SortMemberPath="TimeText">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding TimeText}" Style="{StaticResource CellTextStyle}"
+                                               HorizontalAlignment="Center" TextAlignment="Center" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                            <DataGridTemplateColumn.CellEditingTemplate>
+                                <DataTemplate>
+                                    <TextBox Text="{Binding TimeText, Mode=OneWay}"
+                                             TextAlignment="Center"
+                                             Style="{StaticResource CellEditBoxStyle}" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellEditingTemplate>
+                        </DataGridTemplateColumn>
+
+                        <!-- 3. 标题（同「时间」列） -->
+                        <DataGridTemplateColumn Header="标题" Width="85*" SortMemberPath="TitleText" >
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding TitleText}" Style="{StaticResource CellTextStyle}"
+                                               HorizontalAlignment="Center" TextAlignment="Center"
+                                               TextTrimming="CharacterEllipsis" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                            <DataGridTemplateColumn.CellEditingTemplate>
+                                <DataTemplate>
+                                    <!-- MaxLength 与新建窗一致（12 字） -->
+                                    <TextBox Text="{Binding TitleText, Mode=OneWay}" MaxLength="12"
+                                             TextAlignment="Center"
+                                             Style="{StaticResource CellEditBoxStyle}" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellEditingTemplate>
+                        </DataGridTemplateColumn>
+
+                        <!-- 4. 标签：原型 t-tag 样式；有文字才显示半透明色块；不截断，允许溢出 -->
+                        <DataGridTemplateColumn Header="标签" Width="62*" SortMemberPath="TagText">
+                            <DataGridTemplateColumn.CellStyle>
+                                <Style TargetType="DataGridCell" BasedOn="{StaticResource ScheduleCellStyle}">
+                                    <Setter Property="Panel.ZIndex" Value="10" />
+                                </Style>
+                            </DataGridTemplateColumn.CellStyle>
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Border Panel.ZIndex="10"
+                                            HorizontalAlignment="Center" VerticalAlignment="Center"
+                                            ClipToBounds="False"
+                                            Background="{Binding TagBackgroundBrush}">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Padding" Value="0" />
+                                                <Setter Property="CornerRadius" Value="0" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding HasTag}" Value="True">
+                                                        <Setter Property="Padding" Value="8,2" />
+                                                        <Setter Property="CornerRadius" Value="4" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <TextBlock Text="{Binding TagText}" Style="{StaticResource CellTextStyle}"
+                                                   FontSize="10" TextWrapping="NoWrap"
+                                                   TextTrimming="None" ClipToBounds="False" />
+                                    </Border>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                            <DataGridTemplateColumn.CellEditingTemplate>
+                                <DataTemplate>
+                                    <ComboBox IsEditable="False"
+                                              Style="{StaticResource TagEditComboStyle}"
+                                              Loaded="OnTagEditBoxLoaded"
+                                              SelectionChanged="OnTagEditSelectionChanged" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellEditingTemplate>
+                        </DataGridTemplateColumn>
+
+                        <!-- 5. 备注（保留双击编辑；46 行高下编辑框限高滚动） -->
+                        <DataGridTemplateColumn Header="备注" Width="116*" SortMemberPath="NoteText"
+                                                HeaderStyle="{StaticResource ScheduleNoteHeaderStyle}">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding NoteText, Converter={StaticResource EmptyToDash}}"
+                                               Style="{StaticResource CellTextStyle}"
+                                               Margin="6,0" VerticalAlignment="Top"
+                                               MaxHeight="40" ClipToBounds="True" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                            <DataGridTemplateColumn.CellEditingTemplate>
+                                <DataTemplate>
+                                    <TextBox Text="{Binding Schedule.Note, Mode=OneWay}" MaxLength="500"
+                                             AcceptsReturn="False" TextWrapping="Wrap"
+                                             Tag="NoteMultiLine"
+                                             MaxHeight="40" MinHeight="26"
+                                             VerticalScrollBarVisibility="Auto"
+                                             Style="{StaticResource CellEditBoxStyle}" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellEditingTemplate>
+                        </DataGridTemplateColumn>
+
+                        <!-- 6. 提前提醒（恢复显示；放在备注后） -->
+                        <DataGridTemplateColumn Header="提前提醒" Width="40*" SortMemberPath="AdvanceText">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding AdvanceText}" Style="{StaticResource CellTextStyle}"
+                                               HorizontalAlignment="Center" TextAlignment="Center" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                            <DataGridTemplateColumn.CellEditingTemplate>
+                                <DataTemplate>
+                                    <TextBox Text="{Binding AdvanceText, Mode=OneWay}"
+                                             TextAlignment="Center"
+                                             Style="{StaticResource CellEditBoxStyle}" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellEditingTemplate>
+                        </DataGridTemplateColumn>
+
+                        <!-- 7. 重复（本窗只读摘要；居中，长文本省略） -->
+                        <DataGridTextColumn Header="重复规则" Width="60*" Binding="{Binding RecurrenceText}" SortMemberPath="RecurrenceText" IsReadOnly="True">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource CellTextStyle}">
+                                    <Setter Property="TextAlignment" Value="Center" />
+                                    <Setter Property="HorizontalAlignment" Value="Stretch" />
+                                    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+
+                        <!-- 8. 操作（闹钟 / 旗帜 / 编辑 / 删除） -->
+                        <DataGridTemplateColumn Header="" Width="88*" IsReadOnly="True">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                        <!-- 闹钟：整条提醒开关；过期行禁用（只展示状态） -->
+                                        <Button Margin="2,0"
+                                                IsEnabled="{Binding CanToggleRemind}"
+                                                Style="{StaticResource ScheduleRowIconButtonStyle}"
+                                                Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=DataGridRow}}"
+                                                ToolTip="提醒" Click="OnAlarmClick">
+                                            <Path Data="{StaticResource IconAlarm}"
+                                                  Stroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
+                                                  StrokeThickness="2" Stretch="Uniform"
+                                                  Width="16" Height="16" SnapsToDevicePixels="True">
+                                                <Path.Style>
+                                                    <Style TargetType="Path">
+                                                        <!-- 过期统一按“过期 + 提醒开”的浓度显示，不再区分提醒开关。 -->
+                                                        <Setter Property="Opacity" Value="0.35" />
+                                                        <Style.Triggers>
+                                                            <MultiDataTrigger>
+                                                                <MultiDataTrigger.Conditions>
+                                                                    <Condition Binding="{Binding IsPast}" Value="False" />
+                                                                    <Condition Binding="{Binding RemindEnabled}" Value="True" />
+                                                                </MultiDataTrigger.Conditions>
+                                                                <Setter Property="Opacity" Value="1" />
+                                                            </MultiDataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Path.Style>
+                                            </Path>
+                                        </Button>
+                                        <!-- 旗帜：待办标记；过期行可补记 -->
+                                        <Button Margin="2,0"
+                                                IsEnabled="{Binding CanToggleTodo}"
+                                                Style="{StaticResource ScheduleRowIconButtonStyle}"
+                                                Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=DataGridRow}}"
+                                                ToolTip="待办事项" Click="OnTodoClick">
+                                            <Path Data="{StaticResource IconFlag}"
+                                                  Stroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
+                                                  StrokeThickness="2" Stretch="Uniform"
+                                                  Width="16" Height="16" SnapsToDevicePixels="True">
+                                                <Path.Style>
+                                                    <Style TargetType="Path">
+                                                        <Setter Property="Opacity" Value="0.35" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsTodo}" Value="True">
+                                                                <Setter Property="Opacity" Value="1" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Path.Style>
+                                            </Path>
+                                        </Button>
+                                        <!-- 编辑 / 删除：过期行同样保留 -->
+                                        <Button Margin="2,0"
+                                                Style="{StaticResource ScheduleRowIconButtonStyle}"
+                                                Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=DataGridRow}}"
+                                                ToolTip="编辑" Click="OnEditRowClick">
+                                            <Path Data="{StaticResource IconSquarePen}"
+                                                  Stroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
+                                                  StrokeThickness="1.5" Stretch="Uniform"
+                                                  Width="14" Height="14" SnapsToDevicePixels="True" />
+                                        </Button>
+                                        <Button Margin="2,0"
+                                                Style="{StaticResource ScheduleRowIconButtonStyle}"
+                                                Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=DataGridRow}}"
+                                                ToolTip="删除" Click="OnDeleteRowClick">
+                                            <Path Data="{StaticResource IconTrash}"
+                                                  Stroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
+                                                  StrokeThickness="1.5" Stretch="Uniform"
+                                                  Width="14" Height="14" SnapsToDevicePixels="True" />
+                                        </Button>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+
+                <!-- 空态提示 -->
+                <TextBlock x:Name="EmptyHint"
+                           Text="暂无日程，点击「新建日程」添加"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           FontFamily="{DynamicResource AppFont}"
+                           FontSize="{DynamicResource FontBody}"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           Visibility="Collapsed" />
+            </Grid>
+
+            <!-- ============ 底部 ============ -->
+        </Grid>
+    </Border>
+</Window>

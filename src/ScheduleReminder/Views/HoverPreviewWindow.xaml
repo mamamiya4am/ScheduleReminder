@@ -1,0 +1,152 @@
+﻿<Window x:Class="ScheduleReminder.Views.HoverPreviewWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:converters="clr-namespace:ScheduleReminder.Converters"
+        Title="日程预览"
+        Width="630" Height="200"
+        WindowStyle="None" AllowsTransparency="True" ResizeMode="NoResize"
+        Background="Transparent" ShowInTaskbar="False" ShowActivated="False"
+        Topmost="True" Focusable="False" IsHitTestVisible="False"
+        UseLayoutRounding="True">
+
+    <Window.Resources>
+        <converters:ScheduleBgBrushConverter x:Key="ScheduleBg" />
+        <converters:ScheduleFontBrushConverter x:Key="ScheduleFont" />
+        <converters:BoolToVisibilityConverter x:Key="BoolToVis" />
+
+        <!-- 行内单元格文字：始终取日程字体色（透明 = 继承全局）。
+             过期不再替换前景色，改由行容器整行半透明（Opacity 0.5）处理，以保留自定义色相 -->
+        <Style x:Key="CellTextStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{Binding FontColor, Converter={StaticResource ScheduleFont}}" />
+            <Setter Property="FontFamily" Value="{DynamicResource AppFont}" />
+            <Setter Property="FontSize" Value="{DynamicResource FontBody}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        </Style>
+    </Window.Resources>
+
+    <Border CornerRadius="12" Background="{DynamicResource WindowBgBrush}"
+            BorderBrush="{DynamicResource BorderStrongBrush}" BorderThickness="1" Padding="8">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="56" />
+                <RowDefinition Height="36" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- 标题区：YYYY 年 M 月 D 日（周X）· 农历 / 节气 / 节日 -->
+            <TextBlock x:Name="TitleText" Grid.Row="0" Text=""
+                       VerticalAlignment="Center" Margin="6,0,0,0"
+                       FontSize="{DynamicResource FontH3}" FontWeight="SemiBold"
+                       FontFamily="{DynamicResource AppFont}"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+
+            <!-- 表头（列名居中） -->
+            <Border Grid.Row="1" BorderBrush="{DynamicResource BorderWeakBrush}" BorderThickness="0,0,0,1">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="48*" />
+                        <ColumnDefinition Width="140*" />
+                        <ColumnDefinition Width="86*" />
+                        <ColumnDefinition Width="200*" />
+                        <ColumnDefinition Width="58*" />
+                        <ColumnDefinition Width="48*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="时间" Style="{StaticResource CellTextStyle}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                    <TextBlock Grid.Column="1" Text="标题" Style="{StaticResource CellTextStyle}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                    <TextBlock Grid.Column="2" Text="标签" Style="{StaticResource CellTextStyle}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                    <TextBlock Grid.Column="3" Text="备注" Style="{StaticResource CellTextStyle}"
+                               HorizontalAlignment="Left" VerticalAlignment="Center" Margin="6,0,0,0"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                    <TextBlock Grid.Column="4" Text="提前提醒" Style="{StaticResource CellTextStyle}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                </Grid>
+            </Border>
+
+            <!-- 数据行：行高固定 50，行间 5px 间隙，行块圆角 7。外层 ScrollViewer 保证多日程全部可见（可滚动、不裁切）。
+                 备注 MaxHeight=46 + 上下各 2px 边距，可完整显示三整行，第四行起裁切。 -->
+            <ScrollViewer Grid.Row="2" Margin="0,4,0,0"
+                          VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <ItemsControl x:Name="RowItems">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Height="50" Margin="0,0,0,5" CornerRadius="7"
+                                Background="{Binding BgColor, Converter={StaticResource ScheduleBg}}">
+                            <!-- 过期：整行（含底色）半透明淡出，文字色仍为日程自定义色 -->
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsPast}" Value="True">
+                                            <Setter Property="Opacity" Value="0.5" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="48*" />
+                                    <ColumnDefinition Width="140*" />
+                                    <ColumnDefinition Width="86*" />
+                                    <ColumnDefinition Width="200*" />
+                                    <ColumnDefinition Width="58*" />
+                                    <ColumnDefinition Width="48*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="{Binding TimeText}" Style="{StaticResource CellTextStyle}" />
+                                <TextBlock Grid.Column="1" Text="{Binding TitleText}" Style="{StaticResource CellTextStyle}"
+                                           TextWrapping="Wrap" Margin="6,0" />
+                                <!-- 标签：原型 t-tag 样式；有文字才显示半透明色块；不截断，允许溢出 -->
+                                <Border Grid.Column="2" Panel.ZIndex="10"
+                                        HorizontalAlignment="Center" VerticalAlignment="Center"
+                                        ClipToBounds="False"
+                                        Background="{Binding TagBackgroundBrush}">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Padding" Value="0" />
+                                            <Setter Property="CornerRadius" Value="0" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding HasTag}" Value="True">
+                                                    <Setter Property="Padding" Value="8,2" />
+                                                    <Setter Property="CornerRadius" Value="4" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <TextBlock Text="{Binding TagText}" Style="{StaticResource CellTextStyle}"
+                                               FontSize="10" TextWrapping="NoWrap"
+                                               TextTrimming="None" HorizontalAlignment="Center"
+                                               ClipToBounds="False" />
+                                </Border>
+                                <TextBlock Grid.Column="3" Text="{Binding NoteText}" Style="{StaticResource CellTextStyle}"
+                                           TextWrapping="Wrap" HorizontalAlignment="Left" VerticalAlignment="Top"
+                                           MaxHeight="46" ClipToBounds="True" TextTrimming="None" Margin="6,2,6,2" />
+                                <TextBlock Grid.Column="4" Text="{Binding AdvanceText}" Style="{StaticResource CellTextStyle}" />
+                                <StackPanel Grid.Column="5" Orientation="Horizontal"
+                                            HorizontalAlignment="Left" VerticalAlignment="Center">
+                                    <Path Data="{StaticResource IconAlarm}"
+                                          Stroke="{Binding FontColor, Converter={StaticResource ScheduleFont}}"
+                                          StrokeThickness="2" Stretch="Uniform"
+                                          Width="16" Height="16" SnapsToDevicePixels="True" Margin="2.5,0"
+                                          Visibility="{Binding RemindEnabled, Converter={StaticResource BoolToVis}}" />
+                                    <Path Data="{StaticResource IconFlag}"
+                                          Stroke="{Binding FontColor, Converter={StaticResource ScheduleFont}}"
+                                          StrokeThickness="2" Stretch="Uniform"
+                                          Width="16" Height="16" SnapsToDevicePixels="True" Margin="2.5,0"
+                                          Visibility="{Binding IsTodo, Converter={StaticResource BoolToVis}}" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            </ScrollViewer>
+            </Grid>
+    </Border>
+</Window>

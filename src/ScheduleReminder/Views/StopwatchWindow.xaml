@@ -1,0 +1,195 @@
+<Window x:Class="ScheduleReminder.Views.StopwatchWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        Title="秒表"
+        Width="400" Height="290" MinWidth="360" MinHeight="260"
+        WindowStyle="None" AllowsTransparency="True" ResizeMode="CanResize"
+        Background="Transparent" ShowInTaskbar="True"
+        WindowStartupLocation="CenterScreen"
+        UseLayoutRounding="True" SnapsToDevicePixels="True">
+
+    <!-- 自绘无边框窗口：CaptionHeight=0（拖动由代码 DragMove 完成），四边 6px 交给 WindowChrome 做缩放命中 -->
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="0" ResizeBorderThickness="6"
+                            GlassFrameThickness="0" CornerRadius="0" UseAeroCaptionButtons="False" />
+    </shell:WindowChrome.WindowChrome>
+
+    <Window.Resources>
+        <!-- 操作按钮：高 28、圆角 8、底色控件填充色、文字次级文字色；悬停换悬停底色与系统文字色；禁用时整体半透明 -->
+        <Style x:Key="ToolActionButtonStyle" TargetType="Button">
+            <Setter Property="Height" Value="28" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="FontSize" Value="{DynamicResource FontBody}" />
+            <Setter Property="FontFamily" Value="{DynamicResource AppFont}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+            <Setter Property="Background" Value="{DynamicResource BgBtnBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderWeakBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" CornerRadius="8"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource BgHoverBrush}" />
+                                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Opacity" Value="0.45" />
+                    <Setter Property="Cursor" Value="Arrow" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+
+    <!-- 窗口四周留 20 像素透明边距，用来承载投影；可见内容区为 360×250 -->
+    <Grid>
+        <Border Margin="20" CornerRadius="{DynamicResource RadiusWindow}"
+                Background="{DynamicResource WindowBgSolidBrush}"
+                BorderBrush="{DynamicResource BorderWeakBrush}" BorderThickness="1"
+                SnapsToDevicePixels="True">
+            <Border.Effect>
+                <!-- 原型：0 18px 60px rgba(0,0,0,0.55) -->
+                <DropShadowEffect Color="Black" Direction="90" ShadowDepth="18" BlurRadius="60" Opacity="0.55" />
+            </Border.Effect>
+
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="34" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <!-- ============ 标题栏（无图标，仅程序名，左定位 12） ============ -->
+                <Border Grid.Row="0" Background="Transparent"
+                        MouseLeftButtonDown="OnTitleBarMouseLeftButtonDown">
+                    <Grid>
+                        <TextBlock Text="秒表" Margin="12,0,0,0"
+                                   HorizontalAlignment="Left" VerticalAlignment="Center"
+                                   FontSize="13" FontWeight="SemiBold"
+                                   FontFamily="{DynamicResource AppFont}"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,6,0">
+                            <Button Style="{StaticResource TitleBarIconButtonStyle}"
+                                    ToolTip="最小化" Click="OnMinimizeClick">
+                                <Path Data="{StaticResource IconMinimize}"
+                                      Stroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
+                                      StrokeThickness="1.5" Stretch="Uniform"
+                                      Width="13" Height="13" SnapsToDevicePixels="True" />
+                            </Button>
+                            <Button Style="{StaticResource TitleBarCloseButtonStyle}"
+                                    ToolTip="关闭" Click="OnCloseClick">
+                                <Path Data="{StaticResource IconClose}"
+                                      Stroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
+                                      StrokeThickness="1.5" Stretch="Uniform"
+                                      Width="13" Height="13" SnapsToDevicePixels="True" />
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- ============ 主体：纵向居中，左右内边距 20 ============ -->
+                <Grid Grid.Row="1" Margin="20,0,20,0">
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <!-- 计时：单位在上、数字在下；最后一段为三位毫秒 -->
+                        <Grid HorizontalAlignment="Center">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="时" Margin="0,0,0,2"
+                                       HorizontalAlignment="Center"
+                                       FontFamily="{DynamicResource AppFont}"
+                                       FontSize="{DynamicResource FontCaption}"
+                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <TextBlock Grid.Row="0" Grid.Column="2" Text="分" Margin="0,0,0,2"
+                                       HorizontalAlignment="Center"
+                                       FontFamily="{DynamicResource AppFont}"
+                                       FontSize="{DynamicResource FontCaption}"
+                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <TextBlock Grid.Row="0" Grid.Column="4" Text="秒" Margin="0,0,0,2"
+                                       HorizontalAlignment="Center"
+                                       FontFamily="{DynamicResource AppFont}"
+                                       FontSize="{DynamicResource FontCaption}"
+                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <TextBlock Grid.Row="0" Grid.Column="6" Text="毫秒" Margin="0,0,0,2"
+                                       HorizontalAlignment="Center"
+                                       FontFamily="{DynamicResource AppFont}"
+                                       FontSize="{DynamicResource FontCaption}"
+                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+
+                            <TextBlock x:Name="HoursText" Grid.Row="1" Grid.Column="0" Text="00"
+                                       MinWidth="42" TextAlignment="Center"
+                                       FontSize="36" FontWeight="SemiBold"
+                                       FontFamily="{DynamicResource MonoFont}"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <TextBlock Grid.Row="1" Grid.Column="1" Text=":" Margin="0,0,2,0"
+                                       VerticalAlignment="Center"
+                                       FontSize="36" FontWeight="SemiBold"
+                                       FontFamily="{DynamicResource MonoFont}"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <TextBlock x:Name="MinutesText" Grid.Row="1" Grid.Column="2" Text="00"
+                                       MinWidth="42" TextAlignment="Center"
+                                       FontSize="36" FontWeight="SemiBold"
+                                       FontFamily="{DynamicResource MonoFont}"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <TextBlock Grid.Row="1" Grid.Column="3" Text=":" Margin="0,0,2,0"
+                                       VerticalAlignment="Center"
+                                       FontSize="36" FontWeight="SemiBold"
+                                       FontFamily="{DynamicResource MonoFont}"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <TextBlock x:Name="SecondsText" Grid.Row="1" Grid.Column="4" Text="00"
+                                       MinWidth="42" TextAlignment="Center"
+                                       FontSize="36" FontWeight="SemiBold"
+                                       FontFamily="{DynamicResource MonoFont}"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <TextBlock Grid.Row="1" Grid.Column="5" Text="." Margin="0,0,2,0"
+                                       VerticalAlignment="Center"
+                                       FontSize="36" FontWeight="SemiBold"
+                                       FontFamily="{DynamicResource MonoFont}"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <TextBlock x:Name="MillisecondsText" Grid.Row="1" Grid.Column="6" Text="000"
+                                       MinWidth="63" TextAlignment="Center"
+                                       FontSize="36" FontWeight="SemiBold"
+                                       FontFamily="{DynamicResource MonoFont}"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                        </Grid>
+
+                        <!-- 按钮行：间距 8、上间距 18；主按钮最小宽 100，复位最小宽 64 -->
+                        <StackPanel Orientation="Horizontal" Margin="0,18,0,0" HorizontalAlignment="Center">
+                            <Button x:Name="MainButton" Content="开始" MinWidth="100"
+                                    Style="{StaticResource ToolActionButtonStyle}"
+                                    Click="OnMainClick" />
+                            <Button x:Name="ResetButton" Content="复位" MinWidth="64" Margin="8,0,0,0"
+                                    Style="{StaticResource ToolActionButtonStyle}"
+                                    IsEnabled="False" Click="OnResetClick" />
+                        </StackPanel>
+                    </StackPanel>
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

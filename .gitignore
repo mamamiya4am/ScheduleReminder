@@ -1,0 +1,23 @@
+# 1. 编译产物、编辑器缓存
+.vs/
+**/bin/
+**/obj/
+**/*.pdb
+**/*.cache
+
+# 2. 发布产物（build\publish.bat 是源码脚本，保留）
+publish/
+**/publish-output/
+
+# 3. 运行期个人数据：日程、设置、标签、日志
+**/settings.json
+**/schedules.json
+**/tags.json
+**/*.log
+**/data/ai/
+**/AI操作规则/
+
+# 4. 临时文件
+_filelist.txt
+tools/_ls.txt
+tools/_run.txt

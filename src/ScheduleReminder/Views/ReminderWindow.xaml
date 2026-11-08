@@ -1,0 +1,93 @@
+<Window x:Class="ScheduleReminder.Views.ReminderWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="日程提醒"
+        Width="300" Height="176"
+        WindowStyle="None" AllowsTransparency="True" ResizeMode="NoResize"
+        Background="Transparent" ShowInTaskbar="False" ShowActivated="False"
+        Topmost="True" UseLayoutRounding="True">
+    <!-- 提醒浮层用专用底色：永远不透明，不受「背景透明度」设置影响 -->
+    <Grid>
+        <Border CornerRadius="{DynamicResource RadiusWindow}"
+                Background="{DynamicResource PopupBgBrush}"
+                BorderThickness="0">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="34" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="34" />
+            </Grid.RowDefinitions>
+
+            <!-- 标题栏：提前提醒显示「还有 N 分钟」，正点提醒显示「提醒」 -->
+            <Grid Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="HeaderText" Grid.Column="0" Text="" Margin="14,0,60,0"
+                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                           FontSize="{DynamicResource FontBodyL}" FontWeight="SemiBold"
+                           FontFamily="{DynamicResource AppFont}"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <Button Grid.Column="1" Width="22" Height="22" Margin="0,0,6,0"
+                        VerticalAlignment="Center" HorizontalAlignment="Right"
+                        Style="{StaticResource TitleBarCloseButtonStyle}" Click="OnCloseClick">
+                    <Path Data="{StaticResource IconClose}"
+                          Stroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
+                          StrokeThickness="1.5" Stretch="Uniform"
+                          Width="11" Height="11" SnapsToDevicePixels="True" />
+                </Button>
+            </Grid>
+
+            <!-- 内容区（可拖动） -->
+            <Grid Grid.Row="1" Margin="12,4,12,0" Background="Transparent"
+                  MouseLeftButtonDown="OnDragStart">
+                <StackPanel>
+                    <!-- 标题整行底色 = 该日程的背景色；没设背景色时保持透明。
+                         标题在剩余空间内左对齐，右侧标签单独占位，避免标签遮住标题。 -->
+                    <Border x:Name="TitleRowBg" Background="Transparent"
+                            CornerRadius="{DynamicResource RadiusChip}" Padding="6,4">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock x:Name="TitleText" Grid.Column="0" Text=""
+                                       VerticalAlignment="Center" TextAlignment="Left"
+                                       FontSize="{DynamicResource FontBodyL}" FontWeight="SemiBold"
+                                       FontFamily="{DynamicResource AppFont}"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                       TextTrimming="CharacterEllipsis" />
+                            <Border x:Name="TagBlock" Grid.Column="1" Margin="10,0,0,0"
+                                    Padding="8,2" CornerRadius="{DynamicResource RadiusChip}"
+                                    VerticalAlignment="Center" Visibility="Collapsed">
+                                <TextBlock x:Name="TagText" Text="" VerticalAlignment="Center"
+                                           FontSize="{DynamicResource FontBodyS}"
+                                           FontFamily="{DynamicResource AppFont}"
+                                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                            </Border>
+                        </Grid>
+                    </Border>
+
+                    <TextBlock x:Name="NoteText" Margin="6,4,0,0" Text=""
+                               FontSize="{DynamicResource FontBodyS}"
+                               FontFamily="{DynamicResource AppFont}"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               TextWrapping="Wrap" MaxHeight="70" />
+                </StackPanel>
+            </Grid>
+
+            <!-- 底部： -->
+            <Grid Grid.Row="2" Margin="0,0,12,0">
+                <Button Content="详细" HorizontalAlignment="Right" VerticalAlignment="Center"
+                        Width="88" Height="24" Margin="0,0,0,0"
+                        Style="{StaticResource NormalButtonStyle}"
+                        FontSize="{DynamicResource FontBodyS}" Click="OnDetailClick" />
+            </Grid>
+        </Grid>
+        </Border>
+        <Border CornerRadius="{DynamicResource RadiusWindow}"
+                BorderBrush="{DynamicResource BorderStrongBrush}" BorderThickness="1"
+                Opacity="0.4" Background="Transparent" IsHitTestVisible="False" />
+    </Grid>
+</Window>
