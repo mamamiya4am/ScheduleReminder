@@ -43,7 +43,6 @@ src\ScheduleReminder\
 ├─ Resources\icon.ico             # 窗口 / 托盘 / EXE 文件图标
 ├─ Resources\icon_taskbar.png     # 任务栏高清图标
 ├─ data\holidays.json             # 随包节假日数据（程序只读 data\）
-├─ data_template\holidays.json    # 旧模板，保留作参考；发布使用 data\holidays.json
 └─ sound\                         # 内置提示音（发布时复制到 data\sound\）
 tools\                            # 节气生成脚本（开发期辅助，不参与构建）
 ```
