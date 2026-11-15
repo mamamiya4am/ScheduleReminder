@@ -71,6 +71,19 @@ namespace ScheduleReminder.Domain
             return true;
         }
 
+        /// <summary>
+        /// 按「某一次发生」判定是否过期：该发生日的正点时间不晚于当前时间即算过期。
+        /// 边界与 IsExpired 的 &lt;= 一致，区别是这里看的是点进来的那一次，不是整条记录。
+        /// </summary>
+        public static bool IsOccurrenceExpired(Schedule schedule, DateTime occurrenceDate, DateTime now)
+        {
+            if (schedule == null)
+            {
+                return false;
+            }
+            return schedule.GetAlarmTime(occurrenceDate) <= now;
+        }
+
         // ---------------- 输入校验 ----------------
 
         /// <summary>时间文本校验：宽松解析。支持 9:00 / 09:00 / 9 / 900 / 0900 等（中文冒号、空格亦兼容）。</summary>

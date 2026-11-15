@@ -236,12 +236,12 @@
                 <!-- 区间条 -->
                 <Grid Grid.Row="1" Margin="2,0,2,4">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="38" />
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
-                    <TextBlock Text="区间" VerticalAlignment="Center" Margin="0,0,6,0"
+                    <TextBlock Text="区间" VerticalAlignment="Center"
                                FontFamily="{DynamicResource AppFont}"
                                FontSize="{DynamicResource FontBodyS}"
                                Foreground="{DynamicResource TextSecondaryBrush}" />
@@ -269,7 +269,7 @@
 
                 <!-- 粒度 -->
                 <Grid Grid.Row="2" Margin="2,0,2,4">
-                    <TextBlock Text="粒度" Width="34" HorizontalAlignment="Left" VerticalAlignment="Center"
+                    <TextBlock Text="粒度" HorizontalAlignment="Left" VerticalAlignment="Center"
                                FontFamily="{DynamicResource AppFont}"
                                FontSize="{DynamicResource FontBodyS}"
                                Foreground="{DynamicResource TextSecondaryBrush}" />
@@ -278,7 +278,7 @@
 
                 <!-- 划分 -->
                 <Grid Grid.Row="3" Margin="2,0,2,6">
-                    <TextBlock Text="划分" Width="34" HorizontalAlignment="Left" VerticalAlignment="Center"
+                    <TextBlock Text="划分" HorizontalAlignment="Left" VerticalAlignment="Center"
                                FontFamily="{DynamicResource AppFont}"
                                FontSize="{DynamicResource FontBodyS}"
                                Foreground="{DynamicResource TextSecondaryBrush}" />

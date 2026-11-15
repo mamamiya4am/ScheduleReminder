@@ -27,13 +27,11 @@
             <Setter Property="FontSize" Value="{DynamicResource FontBody}" />
             <Setter Property="SnapsToDevicePixels" Value="True" />
             <Setter Property="ClipToBounds" Value="False" />
-            <!-- 每条日程上下留 4px 间距（左右 0），让行与行之间有空隙 -->
-            <Setter Property="Margin" Value="0,2" />
+            <!-- 上留 4px：表头分割线到第一条日程 4px；下留 0：相邻两行之间仍合计 4px -->
+            <Setter Property="Margin" Value="0,4,0,0" />
             <Style.Triggers>
-                <!-- 过期：底色减半（转换器参数 0.5）；文字由 CellTextStyle 自行淡出。
-                     三个图标按钮不随之淡出 —— 整行 Opacity 会把按钮一并压暗，故不在行上设 Opacity -->
                 <DataTrigger Binding="{Binding IsPast}" Value="True">
-                    <Setter Property="Background" Value="{Binding BgColor, Converter={StaticResource ScheduleBg}, ConverterParameter=0.5}" />
+                    <Setter Property="Background" Value="{Binding BgColor, Converter={StaticResource ScheduleBg}, ConverterParameter=0.65}" />
                 </DataTrigger>
                 <!-- 校验失败 / 边界秒不满足：整行短暂淡红（内联编辑一律不弹窗提示） -->
                 <DataTrigger Binding="{Binding HasError}" Value="True">
@@ -80,7 +78,7 @@
             <Setter Property="Height" Value="30" />
             <Setter Property="Padding" Value="6,0" />
             <Setter Property="HorizontalContentAlignment" Value="Center" />
-            <Setter Property="BorderBrush" Value="{DynamicResource BorderWeakBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderWeakBrush40}" />
             <Setter Property="BorderThickness" Value="0,0,0,1" />
         </Style>
 
@@ -98,11 +96,13 @@
             <Setter Property="Margin" Value="6,0,6,0" />
             <Setter Property="TextWrapping" Value="Wrap" />
             <Setter Property="Foreground" Value="{Binding FontColor, Converter={StaticResource ScheduleFont}}" />
+
             <Style.Triggers>
                 <DataTrigger Binding="{Binding IsPast}" Value="True">
-                    <Setter Property="Opacity" Value="0.5" />
+                    <Setter Property="Opacity" Value="0.6" />
                 </DataTrigger>
             </Style.Triggers>
+
         </Style>
 
         <!-- 单元格内编辑框（KeyDown 用于区分：Enter=提交 / Shift+Enter=换行不提交） -->
@@ -257,7 +257,7 @@
                           CanUserResizeColumns="False"
                           CanUserReorderColumns="False"
                           CanUserSortColumns="False"
-                          RowHeight="46"
+                          RowHeight="50"
                           RowHeaderWidth="0"
                           SelectionMode="Single"
                           SelectionUnit="Cell"
@@ -363,15 +363,15 @@
                             </DataGridTemplateColumn.CellEditingTemplate>
                         </DataGridTemplateColumn>
 
-                        <!-- 5. 备注（保留双击编辑；46 行高下编辑框限高滚动） -->
+                        <!-- 5. 备注（保留双击编辑；50 行高下只读与编辑上限一致，切换不跳） -->
                         <DataGridTemplateColumn Header="备注" Width="116*" SortMemberPath="NoteText"
                                                 HeaderStyle="{StaticResource ScheduleNoteHeaderStyle}">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding NoteText, Converter={StaticResource EmptyToDash}}"
                                                Style="{StaticResource CellTextStyle}"
-                                               Margin="6,0" VerticalAlignment="Top"
-                                               MaxHeight="40" ClipToBounds="True" />
+                                               Margin="6,0" VerticalAlignment="Center"
+                                               MaxHeight="50" ClipToBounds="True" />
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                             <DataGridTemplateColumn.CellEditingTemplate>
@@ -379,7 +379,7 @@
                                     <TextBox Text="{Binding Schedule.Note, Mode=OneWay}" MaxLength="500"
                                              AcceptsReturn="False" TextWrapping="Wrap"
                                              Tag="NoteMultiLine"
-                                             MaxHeight="40" MinHeight="26"
+                                             MaxHeight="50" MinHeight="26"
                                              VerticalScrollBarVisibility="Auto"
                                              Style="{StaticResource CellEditBoxStyle}" />
                                 </DataTemplate>

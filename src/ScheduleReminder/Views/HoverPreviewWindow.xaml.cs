@@ -18,6 +18,12 @@ namespace ScheduleReminder.Views
     {
         private readonly double _baseWidth;
 
+        // 固定部分：边框 1×2 + 内边距 8×2 + 标题 56 + 表头 36 + 数据区上边距 4 = 114。
+        private const double FixedHeight = 114;
+        // 每行占高：XAML 行块 Height=50 + 行下 Margin=4 = 54（与编辑窗一致）。
+        private const double RowPitch = 54;
+        private const double BottomPadding = 12;
+
         public HoverPreviewWindow()
         {
             InitializeComponent();
@@ -46,8 +52,9 @@ namespace ScheduleReminder.Views
 
             double scale = ThemeService.UiScale;
 
-            // 宽度以 XAML 为基准；高度仍随行数动态，多行时由内部 ScrollViewer 滚动。
-            double computed = (112 + rows.Count * 59 + 4) * scale;
+            // 宽度以 XAML 为基准；高度 = 固定部分 + 每行占高 × 条数 + 底部留白，再乘缩放。
+            // 多行时由内部 ScrollViewer 滚动，且不超过工作区 85%。
+            double computed = (FixedHeight + RowPitch * rows.Count + BottomPadding) * scale;
             Rect area = ScreenHelper.GetWorkArea();
             double maxH = (area.Bottom - area.Top) * 0.85;
             Height = Math.Min(computed, maxH);

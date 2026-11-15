@@ -20,14 +20,16 @@ namespace ScheduleReminder.Views
         private readonly DateTime _date;
 
         // ---------------- 动态高度模型 ----------------
-        // 窗口高度 = ChromeHeight + 每条行高 × 当天条数（100% 缩放下的基准值），
+        // 窗口高度 = ChromeHeight + (行高 + 间隙) × 当天条数 + 底部留白（100% 缩放下的基准值），
         // 下限 = XAML MinHeight（≈2 条日程 + 表头），上限 = 屏幕工作区高 × 0.85。
         // 宽度仍沿用「用户手动缩放后记忆」的值；高度不记忆，每次按条数算。
         //
         // ChromeHeight 对应 EditWindow.xaml：标题栏 34 + 工具条 40 + 窗口 1px 边框×2 + 表头 30 = 106。
         private const double ChromeHeight = 106;
-        // 每条日程额外占的间隙：行 Style 的 Margin="0,2"（上下合计 4）。
+        // 每条日程额外占的间隙：行 Style 的 Margin="0,4,0,0"（合计 4）。
+        // 行高不写死：ComputeBaseHeight 直接读 ScheduleGrid.RowHeight（当前 50）。
         private const double RowGapHeight = 4;
+        private const double BottomPadding = 20;
         // 高度上限系数：不超过屏幕工作区高度的 85%。
         private const double MaxHeightFactor = 0.85;
 
@@ -117,13 +119,14 @@ namespace ScheduleReminder.Views
         }
 
         /// <summary>
-        /// 100% 缩放下的高度基准 = ChromeHeight + 每条行高 × 条数；
+        /// 100% 缩放下的高度基准 = ChromeHeight + (行高 + 间隙) × 条数 + 底部留白；
         /// 下限取 XAML MinHeight（2 条 + 表头），上限取「屏幕工作区高 × 0.85」换算回基准。
         /// </summary>
         private double ComputeBaseHeight(int rowCount)
         {
+            // 行高从 XAML 读，不写死；perRow 即「每多一条日程，窗口该长高多少」。
             double perRow = ScheduleGrid.RowHeight + RowGapHeight;
-            double raw = ChromeHeight + perRow * rowCount;
+            double raw = ChromeHeight + perRow * rowCount + BottomPadding;
             if (raw < _baseMinHeight)
             {
                 raw = _baseMinHeight;
@@ -288,12 +291,12 @@ namespace ScheduleReminder.Views
 
         // ---------------- 内联编辑 ----------------
 
-        /// <summary>进入编辑态：整条已过期的日程禁止内联编辑（行级过去、系列仍有未来的行仍可编辑）。</summary>
+        /// <summary>进入编辑态：已经响过的那一次禁止双击编辑；还没发生的行可编辑。</summary>
         private void OnBeginningEdit(object sender, DataGridBeginningEditEventArgs e)
         {
             ScheduleRowVm row = e.Row.DataContext as ScheduleRowVm;
             if (row == null || row.Schedule == null
-                || ScheduleService.IsExpired(row.Schedule, DateTime.Now))
+                || ScheduleRules.IsOccurrenceExpired(row.Schedule, row.OccurrenceDate, DateTime.Now))
             {
                 e.Cancel = true;
             }
@@ -342,9 +345,9 @@ namespace ScheduleReminder.Views
                 ScheduleGrid.CancelEdit();
                 return;
             }
-            if (ScheduleService.IsExpired(row.Schedule, DateTime.Now))
+            if (ScheduleRules.IsOccurrenceExpired(row.Schedule, row.OccurrenceDate, DateTime.Now))
             {
-                // 整条已过期兜底：即使进入了编辑也不允许落盘
+                // 已经响过的那一次兜底：即使进入了编辑也不允许落盘
                 ScheduleGrid.CancelEdit();
                 return;
             }
@@ -518,7 +521,8 @@ namespace ScheduleReminder.Views
         private FieldCommitResult CommitField(ScheduleRowVm row, string field, string value)
         {
             Schedule schedule = row.Schedule;
-            if (schedule == null || ScheduleService.IsExpired(schedule, DateTime.Now))
+            if (schedule == null
+                || ScheduleRules.IsOccurrenceExpired(schedule, row.OccurrenceDate, DateTime.Now))
             {
                 return FieldCommitResult.Invalid;
             }

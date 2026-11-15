@@ -31,6 +31,9 @@ namespace ScheduleReminder.Views
         // 提醒铃：全程序共用的 SoundPicker 组件（列表 / 试听 / 展开刷新都交给它）
         private SoundPicker _soundPicker;
 
+        /// <summary>编辑态打开时日期框里的日期，用来判断用户有没有动过日期框（bug1）。</summary>
+        private DateTime _editBaseDate = DateTime.MinValue;
+
         /// <summary>新建模式。presetDate 为空时默认今天。</summary>
         public CreateWindow(DateTime? presetDate)
         {
@@ -64,25 +67,20 @@ namespace ScheduleReminder.Views
             _source = schedule;
             _isEditMode = true;
             DateTime now = DateTime.Now;
-            _isReadOnly = ScheduleService.IsExpired(schedule, now);
+            // 能不能改，看点进来的那一次是否已经响过，不再看整条记录（bug2）。
+            _isReadOnly = ScheduleRules.IsOccurrenceExpired(schedule, occurrenceDate, now);
 
             ApplyCalendarRange();
             PopulateTags();
             BuildTimeWheels();
 
+            // 已生效的重复日程：日期框显示点进来的那一天；尚未生效的重复日程：
+            // 这个框就是起始日编辑器，仍显示原起始日；一次性日程照旧显示点进来的那一天。
             DateTime presetDate = occurrenceDate;
-            if (schedule != null && schedule.IsRecurring)
+            if (schedule != null && schedule.IsRecurring
+                && !ScheduleService.HasTakenEffect(schedule, now))
             {
-                if (ScheduleService.HasTakenEffect(schedule, now))
-                {
-                    presetDate = schedule.DateValue > DateTime.Today
-                        ? schedule.DateValue
-                        : DateTime.Today;
-                }
-                else
-                {
-                    presetDate = schedule.DateValue;
-                }
+                presetDate = schedule.DateValue;
             }
             FillFrom(schedule, presetDate);
 
@@ -321,6 +319,10 @@ namespace ScheduleReminder.Views
         {
             TitleBox.Text = schedule.Title;
             DateBox.Text = DateUtil.FormatDate(occurrenceDate);
+            if (_isEditMode)
+            {
+                _editBaseDate = occurrenceDate.Date;
+            }
             TimeBox.Text = DateUtil.FormatTime(schedule.TimeValue);
             AdvanceBox.Text = schedule.AdvanceMinutes.ToString(CultureInfo.InvariantCulture);
             _lastValidAdvance = schedule.AdvanceMinutes;
@@ -741,16 +743,38 @@ namespace ScheduleReminder.Views
             }
 
             DateTime baseDate = DateUtil.ParseDate(DateBox.Text);
+            // 编辑态且日期框没被动过：年月规则沿用原来的月日，不跟着日期框走。
+            // 否则「什么都不改直接保存」会把规则改成点进来那天的月日，触发误分段（bug1）。
+            bool keepOriginal = _isEditMode && _source != null
+                && baseDate.Date == _editBaseDate
+                && _source.Recurrence != null;
+            YearlyRule oldYearly = keepOriginal ? _source.Recurrence.Yearly : null;
+            MonthlyRule oldMonthly = keepOriginal ? _source.Recurrence.Monthly : null;
             if (YearlyCheck.IsChecked == true)
             {
                 rule.Yearly = new YearlyRule();
-                rule.Yearly.Month = baseDate.Month;
-                rule.Yearly.Day = baseDate.Day;
+                if (oldYearly != null && oldYearly.Month > 0 && oldYearly.Day > 0)
+                {
+                    rule.Yearly.Month = oldYearly.Month;
+                    rule.Yearly.Day = oldYearly.Day;
+                }
+                else
+                {
+                    rule.Yearly.Month = baseDate.Month;
+                    rule.Yearly.Day = baseDate.Day;
+                }
             }
             if (MonthlyCheck.IsChecked == true)
             {
                 rule.Monthly = new MonthlyRule();
-                rule.Monthly.Day = baseDate.Day;
+                if (oldMonthly != null && oldMonthly.Day > 0)
+                {
+                    rule.Monthly.Day = oldMonthly.Day;
+                }
+                else
+                {
+                    rule.Monthly.Day = baseDate.Day;
+                }
             }
             // 「每月倒数第 N 天」/「每月最后周 X」无勾选框：下拉选 "-" 即表示不启用
             int lastN = GetComboTag(LastNCombo, -1);

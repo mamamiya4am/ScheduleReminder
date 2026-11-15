@@ -17,6 +17,11 @@
     </shell:WindowChrome.WindowChrome>
 
     <Window.Resources>
+        <!-- 运算符下拉：仅本窗覆盖描边为 40% 边框色，全局 ComboStyle 不动 -->
+        <Style x:Key="CalcComboStyle" TargetType="ComboBox" BasedOn="{StaticResource ComboStyle}">
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderWeakBrush40}" />
+        </Style>
+
         <!-- 数字框：高 24、左内边距 8 / 右内边距 12、圆角 5、字号 12（随缩放档位整体放大） -->
         <Style x:Key="CalcNumBoxStyle" TargetType="TextBox">
             <Setter Property="Height" Value="24" />
@@ -61,7 +66,7 @@
             <Setter Property="FontFamily" Value="{DynamicResource AppFont}" />
             <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
             <Setter Property="Background" Value="{DynamicResource BgBtnBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource BorderWeakBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderWeakBrush40}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
@@ -152,7 +157,7 @@
             <Grid Margin="0,0,0,2">
                 <ComboBox Width="76" Height="18" Padding="6,0,6,0" HorizontalAlignment="Left"
                           FontSize="{DynamicResource FontBody}" FontFamily="{DynamicResource AppFont}"
-                          Style="{StaticResource ComboStyle}"
+                          Style="{StaticResource CalcComboStyle}"
                           SelectedValuePath="Tag"
                           SelectedValue="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
                     <ComboBoxItem Tag="">
@@ -285,7 +290,7 @@
                     <!-- 结果面板：外边距 0/14/2、内边距 2/14，圆角 12 -->
                     <Border Grid.Row="1" Margin="14,0,14,12" Padding="14,6,14,2"
                             CornerRadius="{DynamicResource RadiusWindow}"
-                            BorderBrush="{DynamicResource BorderWeakBrush}" BorderThickness="1"
+                            BorderBrush="{DynamicResource BorderWeakBrush40}" BorderThickness="1"
                             Background="{DynamicResource BgInputBrush}">
                         <StackPanel>
                             <TextBlock Text="{Binding ExpressionText}"

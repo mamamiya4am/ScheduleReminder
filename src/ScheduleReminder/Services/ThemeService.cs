@@ -189,6 +189,7 @@ namespace ScheduleReminder.Services
             // 边框 / 强调色：不透明，不受背景透明度影响
             SetBrush(resources, "BorderWeakBrush", settings.SystemBorderColor);
             SetBrush(resources, "BorderStrongBrush", settings.SystemBorderColor);
+            SetBrushWithAlpha(resources, "BorderWeakBrush40", settings.SystemBorderColor, 0.4);
             // 图标线条色跟随「边框色」：不单独提供图标色设置，改边框色即改全部图标（ADR-009）
             SetBrush(resources, "IconStrokeBrush", settings.SystemBorderColor);
             SetBrush(resources, "TodayBorderBrush", settings.TodayBorderColor);

@@ -43,6 +43,7 @@
             <SolidColorBrush x:Key="TextNoteBrush" Color="#8A8A8A" />
 
             <SolidColorBrush x:Key="BorderWeakBrush" Color="#1AFFFFFF" />
+            <SolidColorBrush x:Key="BorderWeakBrush40" Color="#66FFFFFF" />
             <SolidColorBrush x:Key="BorderStrongBrush" Color="#38FFFFFF" />
             <SolidColorBrush x:Key="TodayBorderBrush" Color="#FFFFA726" />
             <!-- 今日圆点上的日期数字色（黑 / 白）：ThemeService 启动时按「今日色」亮度自动覆盖此值 -->

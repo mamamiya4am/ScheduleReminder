@@ -1548,7 +1548,8 @@ namespace ScheduleReminder.Views
 
             public string DateText
             {
-                get { return At.Month + " 月 " + At.Day + " 日"; }
+                // 只改搜索结果的显示写法；排序、跳转仍用 At，落盘格式仍是 yyyy-MM-dd。
+                get { return At.ToString("yyyy/MM/dd", System.Globalization.CultureInfo.InvariantCulture); }
             }
 
             public Visibility RepeatVisibility
@@ -1635,6 +1636,14 @@ namespace ScheduleReminder.Views
             SearchPanel.IsOpen = true;
         }
 
+        // 「往回找」最多回看的天数：防御起始日很早、规则又永不命中的老日程，
+        // 避免每敲一个字都把日历逐日翻回 1900 年。约 32 年，正常日程结果不受影响。
+        private const int MaxSearchBacktrackDays = 12000;
+
+        /// <summary>
+        /// 按标题取搜索结果。重复日程以 seriesId 收敛：每个系列在「即将到来」「已过期」各最多一条；
+        /// 一次性日程沿用按记录出结果的口径，不参与聚合。
+        /// </summary>
         private static void BuildSearchHits(
             string keyword, out List<SearchHit> upcoming, out List<SearchHit> expired)
         {
@@ -1645,12 +1654,19 @@ namespace ScheduleReminder.Views
                 return;
             }
 
+            // 当前时间只在入口取一次，避免循环内跨零点前后判断漂移。
             DateTime now = DateTime.Now;
             DateTime today = now.Date;
             List<Schedule> all = AppServices.Repository.All;
+
+            // 以系列标识为键收敛：即将到来取最早的，已过期取最晚的。
+            Dictionary<string, SearchHit> upcomingBySeries = new Dictionary<string, SearchHit>(StringComparer.Ordinal);
+            Dictionary<string, SearchHit> expiredBySeries = new Dictionary<string, SearchHit>(StringComparer.Ordinal);
+
             for (int i = 0; i < all.Count; i++)
             {
                 Schedule schedule = all[i];
+                // 标题过滤仍在遍历入口：只用标题命中的段参与合并。
                 if (schedule == null || schedule.Title == null
                     || schedule.Title.IndexOf(keyword,
                         StringComparison.CurrentCultureIgnoreCase) < 0)
@@ -1658,66 +1674,12 @@ namespace ScheduleReminder.Views
                     continue;
                 }
 
-                bool isExpired = ScheduleService.IsExpired(schedule, now);
-                if (schedule.IsRecurring)
-                {
-                    DateTime occurrence;
-                    if (!isExpired)
-                    {
-                        List<DateTime> next = RecurrenceService.EnumerateOccurrences(
-                            schedule, today, 400, 1);
-                        if (next.Count == 0)
-                        {
-                            continue;
-                        }
-                        occurrence = next[0];
-                    }
-                    else
-                    {
-                        if (schedule.Recurrence == null
-                            || string.IsNullOrEmpty(schedule.Recurrence.Until))
-                        {
-                            continue;
-                        }
-                        DateTime cursor;
-                        if (!DateUtil.TryParseDateText(schedule.Recurrence.Until, out cursor))
-                        {
-                            continue;
-                        }
-                        occurrence = DateTime.MinValue;
-                        for (int d = 0; d < 400; d++)
-                        {
-                            if (RecurrenceService.IsHit(schedule, cursor))
-                            {
-                                occurrence = cursor;
-                                break;
-                            }
-                            cursor = cursor.AddDays(-1);
-                        }
-                        if (occurrence == DateTime.MinValue)
-                        {
-                            continue;
-                        }
-                    }
-                    SearchHit hit = new SearchHit();
-                    hit.At = occurrence.Date.Add(schedule.TimeValue);
-                    hit.Title = schedule.Title;
-                    hit.Repeat = RecurrenceService.Describe(schedule);
-                    if (isExpired)
-                    {
-                        expired.Add(hit);
-                    }
-                    else
-                    {
-                        upcoming.Add(hit);
-                    }
-                }
-                else
+                if (!schedule.IsRecurring)
                 {
                     SearchHit hit = new SearchHit();
                     hit.At = schedule.DateValue.Add(schedule.TimeValue);
                     hit.Title = schedule.Title;
-                    if (isExpired)
+                    if (ScheduleService.IsExpired(schedule, now))
                     {
                         expired.Add(hit);
                     }
@@ -1725,9 +1687,80 @@ namespace ScheduleReminder.Views
                     {
                         upcoming.Add(hit);
                     }
+                    continue;
+                }
+
+                string seriesKey = string.IsNullOrEmpty(schedule.SeriesId)
+                    ? schedule.Id
+                    : schedule.SeriesId;
+                if (string.IsNullOrEmpty(seriesKey))
+                {
+                    // 极端兜底：旧数据既无系列标识也无 id 时，退化为按记录出结果，字典不接受 null 键。
+                    seriesKey = "record:" + i.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                }
+                string repeatText = RecurrenceService.Describe(schedule);
+
+                // 往后候选：从今天起取前两个命中日，挑第一个正点时间晚于现在的。
+                // 窗口覆盖到 2100-12-31，每年 2 月 29 日也能取到下一个闰年。
+                DateTime forwardStart = schedule.DateValue > today ? schedule.DateValue : today;
+                if (forwardStart <= DateUtil.MaxSupportedDate)
+                {
+                    int maxDays = (DateUtil.MaxSupportedDate - forwardStart).Days;
+                    List<DateTime> next = RecurrenceService.EnumerateOccurrences(
+                        schedule, today, maxDays, 2);
+                    for (int n = 0; n < next.Count; n++)
+                    {
+                        DateTime at = schedule.GetAlarmTime(next[n]);
+                        if (at <= now)
+                        {
+                            continue;
+                        }
+                        SearchHit hit = new SearchHit();
+                        hit.At = at;
+                        hit.Title = schedule.Title;
+                        hit.Repeat = repeatText;
+                        SearchHit best;
+                        if (!upcomingBySeries.TryGetValue(seriesKey, out best) || at < best.At)
+                        {
+                            upcomingBySeries[seriesKey] = hit;
+                        }
+                        break;
+                    }
+                }
+
+                // 往回候选：从「今天与截止日中较早的一天」逐日回溯，退到起始日即停。
+                // 取第一个正点时间不晚于现在的命中日，今天已经响过的那一次靠这里回来。
+                DateTime? until = DateUtil.ParseDateNullable(
+                    schedule.Recurrence != null ? schedule.Recurrence.Until : null);
+                DateTime cursor = until.HasValue && until.Value < today
+                    ? until.Value.Date
+                    : today;
+                DateTime startDate = schedule.DateValue;
+                for (int d = 0; d < MaxSearchBacktrackDays && cursor >= startDate; d++)
+                {
+                    if (RecurrenceService.IsHit(schedule, cursor))
+                    {
+                        DateTime at = schedule.GetAlarmTime(cursor);
+                        if (at <= now)
+                        {
+                            SearchHit hit = new SearchHit();
+                            hit.At = at;
+                            hit.Title = schedule.Title;
+                            hit.Repeat = repeatText;
+                            SearchHit best;
+                            if (!expiredBySeries.TryGetValue(seriesKey, out best) || at > best.At)
+                            {
+                                expiredBySeries[seriesKey] = hit;
+                            }
+                            break;
+                        }
+                    }
+                    cursor = cursor.AddDays(-1);
                 }
             }
 
+            upcoming.AddRange(upcomingBySeries.Values);
+            expired.AddRange(expiredBySeries.Values);
             upcoming.Sort(delegate(SearchHit a, SearchHit b) { return a.At.CompareTo(b.At); });
             expired.Sort(delegate(SearchHit a, SearchHit b) { return b.At.CompareTo(a.At); });
         }
@@ -1749,7 +1782,8 @@ namespace ScheduleReminder.Views
             }
             SearchHost.Background = ThemeService.SearchFillBrush(false);
             if (SearchHost.IsKeyboardFocusWithin
-                || (SearchPanel.Child != null && SearchPanel.Child.IsKeyboardFocusWithin))
+                || (SearchPanel.Child != null && SearchPanel.Child.IsKeyboardFocusWithin)
+                || IsMouseOverSearchPanel())
             {
                 return;
             }
@@ -1767,11 +1801,21 @@ namespace ScheduleReminder.Views
 
         private void OnWindowPreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
-            if (SearchBox.Visibility != Visibility.Visible || SearchHost.IsMouseOver)
+            if (SearchBox.Visibility != Visibility.Visible
+                || SearchHost.IsMouseOver
+                || IsMouseOverSearchPanel())
             {
                 return;
             }
             CollapseSearch();
+        }
+
+        /// <summary>鼠标是否停在搜索结果下拉里（下拉是独立浮层，不算在 SearchHost 内）。</summary>
+        private bool IsMouseOverSearchPanel()
+        {
+            return SearchPanel.IsOpen
+                   && SearchPanel.Child != null
+                   && SearchPanel.Child.IsMouseOver;
         }
 
         private void OnSearchResultClick(object sender, MouseButtonEventArgs e)
@@ -1781,6 +1825,7 @@ namespace ScheduleReminder.Views
             if (hit != null)
             {
                 JumpToDate(hit.At.Date);
+                e.Handled = true;
             }
             CollapseSearch();
         }

@@ -27,7 +27,7 @@
     </Window.Resources>
 
     <Border CornerRadius="12" Background="{DynamicResource WindowBgBrush}"
-            BorderBrush="{DynamicResource BorderStrongBrush}" BorderThickness="1" Padding="8">
+            BorderBrush="{DynamicResource BorderWeakBrush40}" BorderThickness="1" Padding="8">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="56" />
@@ -43,7 +43,7 @@
                        Foreground="{DynamicResource TextPrimaryBrush}" />
 
             <!-- 表头（列名居中） -->
-            <Border Grid.Row="1" BorderBrush="{DynamicResource BorderWeakBrush}" BorderThickness="0,0,0,1">
+            <Border Grid.Row="1" BorderBrush="{DynamicResource BorderWeakBrush40}" BorderThickness="0,0,0,1">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="48*" />
@@ -71,14 +71,14 @@
                 </Grid>
             </Border>
 
-            <!-- 数据行：行高固定 50，行间 5px 间隙，行块圆角 7。外层 ScrollViewer 保证多日程全部可见（可滚动、不裁切）。
-                 备注 MaxHeight=46 + 上下各 2px 边距，可完整显示三整行，第四行起裁切。 -->
+            <!-- 数据行：行高固定 50，行间 4px 间隙，行块圆角 7。外层 ScrollViewer 保证多日程全部可见（可滚动、不裁切）。
+                 备注 MaxHeight=50、上下不留边距，与编辑窗一致；超出行高的部分裁切。 -->
             <ScrollViewer Grid.Row="2" Margin="0,4,0,0"
                           VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                 <ItemsControl x:Name="RowItems">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Border Height="50" Margin="0,0,0,5" CornerRadius="7"
+                        <Border Height="50" Margin="0,0,0,4" CornerRadius="7"
                                 Background="{Binding BgColor, Converter={StaticResource ScheduleBg}}">
                             <!-- 过期：整行（含底色）半透明淡出，文字色仍为日程自定义色 -->
                             <Border.Style>
@@ -125,8 +125,8 @@
                                                ClipToBounds="False" />
                                 </Border>
                                 <TextBlock Grid.Column="3" Text="{Binding NoteText}" Style="{StaticResource CellTextStyle}"
-                                           TextWrapping="Wrap" HorizontalAlignment="Left" VerticalAlignment="Top"
-                                           MaxHeight="46" ClipToBounds="True" TextTrimming="None" Margin="6,2,6,2" />
+                                           TextWrapping="Wrap" HorizontalAlignment="Left" VerticalAlignment="Center"
+                                           MaxHeight="50" ClipToBounds="True" TextTrimming="None" Margin="6,0" />
                                 <TextBlock Grid.Column="4" Text="{Binding AdvanceText}" Style="{StaticResource CellTextStyle}" />
                                 <StackPanel Grid.Column="5" Orientation="Horizontal"
                                             HorizontalAlignment="Left" VerticalAlignment="Center">

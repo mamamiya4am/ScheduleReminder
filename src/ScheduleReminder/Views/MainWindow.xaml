@@ -125,7 +125,7 @@
 
         <DataTemplate x:Key="SearchRowTemplate">
             <Border Height="30" Padding="8,0" CornerRadius="6" Cursor="Hand"
-                    MouseLeftButtonUp="OnSearchResultClick">
+                    PreviewMouseLeftButtonDown="OnSearchResultClick">
                 <Border.Style>
                     <Style TargetType="Border">
                         <Setter Property="Background" Value="Transparent" />
@@ -138,9 +138,9 @@
                 </Border.Style>
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="62" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="1*" />
+                        <ColumnDefinition Width="2.4*" />
+                        <ColumnDefinition Width="1*" />
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="{Binding DateText}" VerticalAlignment="Center"
                                FontSize="{DynamicResource FontBodyS}"
@@ -152,6 +152,7 @@
                     <TextBlock Grid.Column="2" Text="{Binding Repeat}"
                                Visibility="{Binding RepeatVisibility}"
                                VerticalAlignment="Center" Margin="8,0,0,0"
+                               TextTrimming="CharacterEllipsis"
                                FontSize="{DynamicResource FontCaption}"
                                Foreground="{DynamicResource TextNoteBrush}" />
                 </Grid>
@@ -215,7 +216,7 @@
                         <Popup x:Name="SearchPanel" PlacementTarget="{Binding ElementName=SearchHost}"
                                Placement="Bottom" HorizontalOffset="0" VerticalOffset="4"
                                StaysOpen="True" AllowsTransparency="True" PopupAnimation="Fade">
-                            <Border Width="300" MaxHeight="306" Padding="6"
+                            <Border Width="340" MaxHeight="306" Padding="6"
                                     Background="{DynamicResource PopupBgBrush}"
                                     BorderBrush="{DynamicResource BorderWeakBrush}"
                                     BorderThickness="1" CornerRadius="10">
@@ -232,15 +233,13 @@
                                                 <ColumnDefinition />
                                             </Grid.ColumnDefinitions>
                                             <Border Height="1" VerticalAlignment="Center"
-                                                    Opacity="0.4"
-                                                    Background="{DynamicResource BorderWeakBrush}" />
+                                                    Background="{DynamicResource BorderWeakBrush40}" />
                                             <TextBlock Grid.Column="1" Text="已过期" Margin="8,0"
                                                        VerticalAlignment="Center"
                                                        FontSize="{DynamicResource FontCaption}"
-                                                       Foreground="{DynamicResource TextNoteBrush}" />
+                                                       Foreground="{DynamicResource BorderWeakBrush40}" />
                                             <Border Grid.Column="2" Height="1" VerticalAlignment="Center"
-                                                    Opacity="0.4"
-                                                    Background="{DynamicResource BorderWeakBrush}" />
+                                                    Background="{DynamicResource BorderWeakBrush40}" />
                                         </Grid>
                                         <ItemsControl x:Name="SearchExpired"
                                                       ItemTemplate="{StaticResource SearchRowTemplate}" />
@@ -892,7 +891,7 @@
                                        FontSize="{DynamicResource FontBody}" FontFamily="{DynamicResource AppFont}"
                                        Foreground="{DynamicResource TextNoteBrush}" Margin="0,4" Visibility="Collapsed" />
 
-                            <Border Height="1" Background="{DynamicResource BorderWeakBrush}" Margin="0,14" />
+                            <Border Height="1" Background="{DynamicResource BorderWeakBrush40}" Margin="0,14" />
 
                             <!-- 当日日程（普通日程，非待办） -->
                             <Grid Margin="0,0,0,10">
