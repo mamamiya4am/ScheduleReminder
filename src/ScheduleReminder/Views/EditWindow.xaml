@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         xmlns:converters="clr-namespace:ScheduleReminder.Converters"
+        xmlns:controls="clr-namespace:ScheduleReminder.Controls"
         Title="日程编辑"
         Width="930" Height="420" MinWidth="745" MinHeight="258"
         WindowStyle="None" AllowsTransparency="True" ResizeMode="CanResize"
@@ -188,50 +189,31 @@
                                Foreground="{DynamicResource TextPrimaryBrush}" />
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,6,0">
                         <Button Style="{StaticResource TitleBarIconButtonStyle}" Click="OnMinimizeClick">
-                            <Path Data="{StaticResource IconMinimize}"
-                                  Stroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
-                                  StrokeThickness="1.5" Stretch="Uniform"
-                                  Width="13" Height="13" SnapsToDevicePixels="True" />
+                            <controls:IconView Glyph="{StaticResource IconMinimize}" IconSize="13"
+                                               IconStroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}" />
                         </Button>
-                        <!-- 最大化 / 还原：两个 Path 都在 XAML 里，C# 只改 Tag 切换显示（与主界面一致，见 OPT-013） -->
+                        <!-- 最大化 / 还原：单个图标控件，按按钮 Tag 切换 Glyph，C# 只改 Tag（与主界面一致，见 OPT-013） -->
                         <Button x:Name="MaximizeButton" Style="{StaticResource TitleBarIconButtonStyle}"
                                 ToolTip="最大化 / 还原" Click="OnMaximizeClick">
-                            <Grid Width="13" Height="13">
-                                <Path Data="{StaticResource IconMaximize}"
-                                      Stroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
-                                      StrokeThickness="1.5" Stretch="Uniform" SnapsToDevicePixels="True">
-                                    <Path.Style>
-                                        <Style TargetType="Path">
-                                            <Setter Property="Visibility" Value="Visible" />
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Tag}" Value="Maximized">
-                                                    <Setter Property="Visibility" Value="Collapsed" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Path.Style>
-                                </Path>
-                                <Path Data="{StaticResource IconRestore}"
-                                      Stroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
-                                      StrokeThickness="1.5" Stretch="Uniform" SnapsToDevicePixels="True">
-                                    <Path.Style>
-                                        <Style TargetType="Path">
-                                            <Setter Property="Visibility" Value="Collapsed" />
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Tag}" Value="Maximized">
-                                                    <Setter Property="Visibility" Value="Visible" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Path.Style>
-                                </Path>
-                            </Grid>
+                            <controls:IconView IconSize="13"
+                                               IconStroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}">
+                                <controls:IconView.Style>
+                                    <Style TargetType="{x:Type controls:IconView}"
+                                           BasedOn="{StaticResource {x:Type controls:IconView}}">
+                                        <Setter Property="Glyph" Value="{StaticResource IconMaximize}" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Tag}"
+                                                         Value="Maximized">
+                                                <Setter Property="Glyph" Value="{StaticResource IconRestore}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </controls:IconView.Style>
+                            </controls:IconView>
                         </Button>
                         <Button Style="{StaticResource TitleBarCloseButtonStyle}" Click="OnCloseClick">
-                            <Path Data="{StaticResource IconClose}"
-                                  Stroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
-                                  StrokeThickness="1.5" Stretch="Uniform"
-                                  Width="13" Height="13" SnapsToDevicePixels="True" />
+                            <controls:IconView Glyph="{StaticResource IconClose}" IconSize="13"
+                                               IconStroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}" />
                         </Button>
                     </StackPanel>
                 </Grid>
@@ -425,12 +407,11 @@
                                                 Style="{StaticResource ScheduleRowIconButtonStyle}"
                                                 Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=DataGridRow}}"
                                                 ToolTip="提醒" Click="OnAlarmClick">
-                                            <Path Data="{StaticResource IconAlarm}"
-                                                  Stroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
-                                                  StrokeThickness="2" Stretch="Uniform"
-                                                  Width="16" Height="16" SnapsToDevicePixels="True">
-                                                <Path.Style>
-                                                    <Style TargetType="Path">
+                                            <controls:IconView Glyph="{StaticResource IconAlarm}" IconSize="16"
+                                                               IconStroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}">
+                                                <controls:IconView.Style>
+                                                    <Style TargetType="{x:Type controls:IconView}"
+                                                           BasedOn="{StaticResource {x:Type controls:IconView}}">
                                                         <!-- 过期统一按“过期 + 提醒开”的浓度显示，不再区分提醒开关。 -->
                                                         <Setter Property="Opacity" Value="0.35" />
                                                         <Style.Triggers>
@@ -443,8 +424,8 @@
                                                             </MultiDataTrigger>
                                                         </Style.Triggers>
                                                     </Style>
-                                                </Path.Style>
-                                            </Path>
+                                                </controls:IconView.Style>
+                                            </controls:IconView>
                                         </Button>
                                         <!-- 旗帜：待办标记；过期行可补记 -->
                                         <Button Margin="2,0"
@@ -452,12 +433,11 @@
                                                 Style="{StaticResource ScheduleRowIconButtonStyle}"
                                                 Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=DataGridRow}}"
                                                 ToolTip="待办事项" Click="OnTodoClick">
-                                            <Path Data="{StaticResource IconFlag}"
-                                                  Stroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
-                                                  StrokeThickness="2" Stretch="Uniform"
-                                                  Width="16" Height="16" SnapsToDevicePixels="True">
-                                                <Path.Style>
-                                                    <Style TargetType="Path">
+                                            <controls:IconView Glyph="{StaticResource IconFlag}" IconSize="16"
+                                                               IconStroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}">
+                                                <controls:IconView.Style>
+                                                    <Style TargetType="{x:Type controls:IconView}"
+                                                           BasedOn="{StaticResource {x:Type controls:IconView}}">
                                                         <Setter Property="Opacity" Value="0.35" />
                                                         <Style.Triggers>
                                                             <DataTrigger Binding="{Binding IsTodo}" Value="True">
@@ -465,27 +445,23 @@
                                                             </DataTrigger>
                                                         </Style.Triggers>
                                                     </Style>
-                                                </Path.Style>
-                                            </Path>
+                                                </controls:IconView.Style>
+                                            </controls:IconView>
                                         </Button>
                                         <!-- 编辑 / 删除：过期行同样保留 -->
                                         <Button Margin="2,0"
                                                 Style="{StaticResource ScheduleRowIconButtonStyle}"
                                                 Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=DataGridRow}}"
                                                 ToolTip="编辑" Click="OnEditRowClick">
-                                            <Path Data="{StaticResource IconSquarePen}"
-                                                  Stroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
-                                                  StrokeThickness="1.5" Stretch="Uniform"
-                                                  Width="14" Height="14" SnapsToDevicePixels="True" />
+                                            <controls:IconView Glyph="{StaticResource IconSquarePen}" IconSize="14"
+                                                               IconStroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}" />
                                         </Button>
                                         <Button Margin="2,0"
                                                 Style="{StaticResource ScheduleRowIconButtonStyle}"
                                                 Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=DataGridRow}}"
                                                 ToolTip="删除" Click="OnDeleteRowClick">
-                                            <Path Data="{StaticResource IconTrash}"
-                                                  Stroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
-                                                  StrokeThickness="1.5" Stretch="Uniform"
-                                                  Width="14" Height="14" SnapsToDevicePixels="True" />
+                                            <controls:IconView Glyph="{StaticResource IconTrash}" IconSize="14"
+                                                               IconStroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}" />
                                         </Button>
                                     </StackPanel>
                                 </DataTemplate>

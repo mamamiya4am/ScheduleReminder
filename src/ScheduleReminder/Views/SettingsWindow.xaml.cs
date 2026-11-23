@@ -18,7 +18,7 @@ using ScheduleReminder.Domain;
 namespace ScheduleReminder.Views
 {
     /// <summary>
-    /// 系统设置窗：悬停预览延迟 / 外观主题 / 提示音 / 开机自启 / AI 投递 / 数据管理 / 预设标签。
+    /// 系统设置窗：悬停预览延迟 / 外观主题 / 提示音 / 开机自启 / AI 投递 / 数据管理。
     /// 所有改动即时进行「设置对象 → 主题应用」的实时预览，关闭时统一落盘 + 通知刷新。
     /// </summary>
     public partial class SettingsWindow : Window
@@ -34,7 +34,6 @@ namespace ScheduleReminder.Views
             ThemeService.ApplyScale(this, Width, Height, MinWidth, MinHeight);
             Closing += OnSettingsClosing;
             InitializeControls();
-            RefreshTagList();
         }
 
         // ================= 初始化 =================
@@ -351,7 +350,7 @@ namespace ScheduleReminder.Views
         /// <summary>
         /// 设置文本框的「回车保存」（OPT-007）：背景透明度 / 悬停延迟两框
         /// 按下 Enter 即执行与失焦完全相同的提交逻辑（共用方法、幂等），提交后吞掉按键。
-        /// 失焦保存保持不变，两种方式并存；背景图片框只读、无此需求，预设标签输入框属「输入→点按钮」动作框。
+        /// 失焦保存保持不变，两种方式并存；背景图片框只读、无此需求。
         /// </summary>
         private void OnSettingBoxKeyDown(object sender, KeyEventArgs e)
         {
@@ -495,7 +494,7 @@ namespace ScheduleReminder.Views
 
         /// <summary>
         /// 用户在下拉展开态下改选铃声 → 即时存盘并让新铃声立即生效。
-        /// 等价于原 OnSoundComboChanged 里的「存设置 + Sound.Configure」；试听由 SoundPicker 内部处理。
+        /// 等价于「存设置 + 新铃声立即生效」；试听由 SoundPicker 内部处理。
         /// </summary>
         private void OnSoundSelected(string name)
         {
@@ -687,261 +686,6 @@ namespace ScheduleReminder.Views
             return text;
         }
 
-        // ================= 预设标签 =================
 
-        /// <summary>列表行：色块 + 名字。</summary>
-        private sealed class TagRow
-        {
-            public string Id { get; set; }
-            public string Name { get; set; }
-            public Brush Bg { get; set; }
-        }
-
-        private void RefreshTagList()
-        {
-            List<TagRow> rows = new List<TagRow>();
-            List<TagTemplate> all = TagTemplateWindow.Templates();
-            for (int i = 0; i < all.Count; i++)
-            {
-                TagTemplate t = all[i];
-                if (t == null || string.IsNullOrEmpty(t.Name))
-                {
-                    continue;
-                }
-                rows.Add(new TagRow { Id = t.Id, Name = t.Name, Bg = BrushForTemplate(t.BgColor) });
-            }
-            TagList.ItemsSource = rows;
-        }
-
-        /// <summary>背景色 -> 色块画笔；空（透明）用棋盘格，与日程条里的观感一致。</summary>
-        private static Brush BrushForTemplate(string color)
-        {
-            if (string.IsNullOrEmpty(color))
-            {
-                object checker = Application.Current != null ? Application.Current.TryFindResource("CheckerBrush") : null;
-                Brush brush = checker as Brush;
-                return brush ?? Brushes.Transparent;
-            }
-            try
-            {
-                SolidColorBrush solid = new SolidColorBrush((Color)ColorConverter.ConvertFromString(color));
-                solid.Freeze();
-                return solid;
-            }
-            catch (Exception)
-            {
-                return Brushes.Transparent;
-            }
-        }
-
-        private TagTemplate FindTemplateById(string id)
-        {
-            if (string.IsNullOrEmpty(id))
-            {
-                return null;
-            }
-            List<TagTemplate> all = TagTemplateWindow.Templates();
-            for (int i = 0; i < all.Count; i++)
-            {
-                TagTemplate t = all[i];
-                if (t != null && string.Equals(t.Id, id, StringComparison.Ordinal))
-                {
-                    return t;
-                }
-            }
-            return null;
-        }
-
-        /// <summary>
-        /// 【兼容分支，正常数据不会进入】
-        /// 仅当 tags.json 中存在“有 name、没有 id”的异常/手工标签时，
-        /// 设置窗编辑/删除才按名字兜底查找。
-        /// 该分支不会补 Id、不会回填日程 tagId，也不参与 JSON 损坏恢复；
-        /// 正常新建或迁移后的标签一律走 FindTemplateById。
-        /// </summary>
-        private TagTemplate FindLegacyTemplateByName(string name)
-        {
-            if (string.IsNullOrEmpty(name))
-            {
-                return null;
-            }
-            List<TagTemplate> all = TagTemplateWindow.Templates();
-            for (int i = 0; i < all.Count; i++)
-            {
-                TagTemplate t = all[i];
-                if (t != null && string.IsNullOrEmpty(t.Id)
-                    && string.Equals(t.Name, name, StringComparison.Ordinal))
-                {
-                    return t;
-                }
-            }
-            return null;
-        }
-
-        /// <summary>新建标签：弹出标签编辑窗（标签名 / 背景色 / 字体色 / 提醒铃）。</summary>
-        private void OnCreateTagClick(object sender, RoutedEventArgs e)
-        {
-            if (AppServices.Settings == null)
-            {
-                return;
-            }
-            TagTemplateWindow win = new TagTemplateWindow(null) { Owner = this };
-            // 出现在设置窗当前位置（含被拖动后的位置）；窗口尺寸固定、不可缩放
-            win.WindowStartupLocation = WindowStartupLocation.Manual;
-            win.Left = this.Left + 20;
-            win.Top = this.Top + 20;
-            bool? confirmed = win.ShowDialog();
-            if (confirmed == true && win.Result != null)
-            {
-                win.Result.Id = IdGenerator.NewTagId();
-                if (AppServices.Tags != null)
-                {
-                    List<TagTemplate> candidate = new List<TagTemplate>(
-                        TagTemplateWindow.Templates());
-                    candidate.Add(win.Result);
-                    SaveOutcome outcome = AppServices.Tags.TrySave(candidate);
-                    if (outcome != SaveOutcome.Ok)
-                    {
-                        DialogService.ShowSaveFailure(outcome, "tags.json");
-                    }
-                }
-                RefreshTagList();
-            }
-        }
-
-        /// <summary>修改标签：编辑窗只负责改样式；删除由下方标签列表的「删除」按钮负责。</summary>
-        private void OnEditTagClick(object sender, RoutedEventArgs e)
-        {
-            TagRow row = TagList.SelectedItem as TagRow;
-            if (row == null)
-            {
-                return;
-            }
-            TagTemplate target = FindTemplateById(row.Id);
-            // 兼容分支：仅 id 为空的异常标签；正常标签不会进入。
-            if (target == null && string.IsNullOrEmpty(row.Id))
-            {
-                target = FindLegacyTemplateByName(row.Name);
-            }
-            if (target == null)
-            {
-                return;
-            }
-
-            TagTemplateWindow win = new TagTemplateWindow(target) { Owner = this };
-            // 出现在设置窗当前位置（含被拖动后的位置）；窗口尺寸固定、不可缩放
-            win.WindowStartupLocation = WindowStartupLocation.Manual;
-            win.Left = this.Left;
-            win.Top = this.Top;
-            bool? confirmed = win.ShowDialog();
-            if (confirmed != true)
-            {
-                return;
-            }
-            if (win.Result != null)
-            {
-                string oldName = target.Name;
-                string oldBg = target.BgColor;
-                string oldFont = target.FontColor;
-                string oldSound = target.Sound;
-
-                target.Name = win.Result.Name;
-                target.BgColor = win.Result.BgColor;
-                target.FontColor = win.Result.FontColor;
-                target.Sound = win.Result.Sound;
-
-                if (!PushTagToSchedules(target))
-                {
-                    target.Name = oldName;
-                    target.BgColor = oldBg;
-                    target.FontColor = oldFont;
-                    target.Sound = oldSound;
-                    RefreshTagList();
-                    return;
-                }
-
-                SaveOutcome tagOutcome = AppServices.Tags == null
-                    ? SaveOutcome.Ok
-                    : AppServices.Tags.TrySave(new List<TagTemplate>(
-                        TagTemplateWindow.Templates()));
-                if (tagOutcome != SaveOutcome.Ok)
-                {
-                    target.Name = oldName;
-                    target.BgColor = oldBg;
-                    target.FontColor = oldFont;
-                    target.Sound = oldSound;
-                    DialogService.ShowSaveFailure(tagOutcome, "tags.json");
-                    // 日程侧已同步成功，必须刷新界面，避免日历仍显示旧颜色
-                    AppServices.RaiseDataChanged();
-                    RefreshTagList();
-                    return;
-                }
-                AppServices.RaiseDataChanged();
-                RefreshTagList();
-            }
-        }
-
-        private void OnRemoveTagClick(object sender, RoutedEventArgs e)
-        {
-            TagRow row = TagList.SelectedItem as TagRow;
-            if (row == null)
-            {
-                return;
-            }
-            TagTemplate target = FindTemplateById(row.Id);
-            // 兼容分支：仅 id 为空的异常标签；正常标签不会进入。
-            if (target == null && string.IsNullOrEmpty(row.Id))
-            {
-                target = FindLegacyTemplateByName(row.Name);
-            }
-            if (target == null)
-            {
-                return;
-            }
-            bool ok = MessageDialog.ShowConfirm(
-                "删除标签",
-                "确定删除标签「" + row.Name + "」吗？\n\n此操作不可撤销。",
-                "删除",
-                true);
-            if (!ok)
-            {
-                return;
-            }
-            if (AppServices.Tags != null)
-            {
-                List<TagTemplate> candidate = new List<TagTemplate>(
-                    TagTemplateWindow.Templates());
-                candidate.Remove(target);
-                SaveOutcome outcome = AppServices.Tags.TrySave(candidate);
-                if (outcome != SaveOutcome.Ok)
-                {
-                    DialogService.ShowSaveFailure(outcome, "tags.json");
-                }
-            }
-            RefreshTagList();
-        }
-
-        /// <summary>
-        /// 标签修改后，按 TagId 把新名字/颜色/铃声推送到命中的日程。
-        /// 在候选列表上克隆修改，写盘成功才替换正式数据。
-        /// 返回 false 表示日程没有保存成功，调用方需要撤销模板字段改动。
-        /// </summary>
-        private bool PushTagToSchedules(TagTemplate target)
-        {
-            if (target == null || string.IsNullOrEmpty(target.Id)
-                || AppServices.Repository == null)
-            {
-                return true;
-            }
-
-            SaveOutcome outcome = ScheduleTagService.PushToSchedules(target);
-            if (outcome == SaveOutcome.Ok)
-            {
-                return true;
-            }
-
-            DialogService.ShowSaveFailure(outcome, "schedules.json");
-            return false;
-        }
     }
 }

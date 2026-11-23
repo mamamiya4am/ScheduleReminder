@@ -10,7 +10,7 @@ namespace ScheduleReminder.Domain.Statistics
     /// 口径（对应「统计数据」产品文档 v1.1）：
     ///   区间终点恒为今天，未来日程一律不计入（只统计发生日期 ≤ 今天）；
     ///   标签按 Schedule.TagId 归类，不按名字，允许重名；
-    ///   未分类 = TagId 空，必须画出；彩色标签最多九个，其余并入「其他标签」；
+    ///   未分类 = TagId 空，按区间内数量决定是否出现；彩色标签最多九个，其余并入「其他标签」；
     ///   总计线颜色固定、默认关闭、不参与色板分配，由窗口层单独处理。
     ///
     /// 性能铁律：按日程遍历，不按天遍历；严禁逐日调用 ScheduleService.GetOccurrences(day)。
@@ -171,10 +171,9 @@ namespace ScheduleReminder.Domain.Statistics
             result.Done = done;
             result.Undone = total - done;
 
-            // 平均值按当前粒度的桶数计算：
-            // 日粒度 = 每日平均，周粒度 = 每周平均，月粒度 = 每月平均。
-            result.Average = result.Buckets.Count > 0
-                ? (double)total / result.Buckets.Count
+            // 概览区显示日均：总数 ÷ 区间天数（含起止两端）。
+            result.Average = result.Days > 0
+                ? (double)total / result.Days
                 : 0.0;
             result.Rate = total > 0 ? (double)done / total : 0.0;
             result.Series = StatisticsSeriesBuilder.BuildList(totals, snapshots, templates, view);

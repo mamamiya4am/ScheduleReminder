@@ -2,31 +2,31 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!-- 统计数据专用定性色板。只存 Color，不绑定主题；窗口按背景亮度选一套。 -->
-    <Color x:Key="StatisticsDark01">#DC6868</Color>
-    <Color x:Key="StatisticsDark02">#DDA66E</Color>
-    <Color x:Key="StatisticsDark03">#8F8F21</Color>
-    <Color x:Key="StatisticsDark04">#79C42E</Color>
-    <Color x:Key="StatisticsDark05">#26A126</Color>
-    <Color x:Key="StatisticsDark06">#2FC87C</Color>
-    <Color x:Key="StatisticsDark07">#249B9B</Color>
-    <Color x:Key="StatisticsDark08">#87B5E3</Color>
-    <Color x:Key="StatisticsDark09">#8181E1</Color>
-    <Color x:Key="StatisticsDark10">#C6A2E9</Color>
-    <Color x:Key="StatisticsDark11">#D756D7</Color>
-    <Color x:Key="StatisticsDark12">#E79AC1</Color>
+    <Color x:Key="StatisticsDark01">#E27878</Color>
+    <Color x:Key="StatisticsDark02">#7878E2</Color>
+    <Color x:Key="StatisticsDark03">#78E278</Color>
+    <Color x:Key="StatisticsDark04">#E2E278</Color>
+    <Color x:Key="StatisticsDark05">#E278E2</Color>
+    <Color x:Key="StatisticsDark06">#78E2E2</Color>
+    <Color x:Key="StatisticsDark07">#ADE278</Color>
+    <Color x:Key="StatisticsDark08">#E2AD78</Color>
+    <Color x:Key="StatisticsDark09">#AD78E2</Color>
+    <Color x:Key="StatisticsDark10">#78E2AD</Color>
+    <Color x:Key="StatisticsDark11">#78ADE2</Color>
+    <Color x:Key="StatisticsDark12">#E278AD</Color>
 
-    <Color x:Key="StatisticsLight01">#DD2C2C</Color>
-    <Color x:Key="StatisticsLight02">#814B15</Color>
-    <Color x:Key="StatisticsLight03">#797914</Color>
-    <Color x:Key="StatisticsLight04">#396310</Color>
-    <Color x:Key="StatisticsLight05">#168616</Color>
-    <Color x:Key="StatisticsLight06">#10653B</Color>
-    <Color x:Key="StatisticsLight07">#158181</Color>
-    <Color x:Key="StatisticsLight08">#19599A</Color>
-    <Color x:Key="StatisticsLight09">#6363E6</Color>
-    <Color x:Key="StatisticsLight10">#7922D0</Color>
-    <Color x:Key="StatisticsLight11">#C820C8</Color>
-    <Color x:Key="StatisticsLight12">#A71B61</Color>
+    <Color x:Key="StatisticsLight01">#C32222</Color>
+    <Color x:Key="StatisticsLight02">#2222C3</Color>
+    <Color x:Key="StatisticsLight03">#22C322</Color>
+    <Color x:Key="StatisticsLight04">#C3C322</Color>
+    <Color x:Key="StatisticsLight05">#C322C3</Color>
+    <Color x:Key="StatisticsLight06">#22C3C3</Color>
+    <Color x:Key="StatisticsLight07">#73C322</Color>
+    <Color x:Key="StatisticsLight08">#C37322</Color>
+    <Color x:Key="StatisticsLight09">#7322C3</Color>
+    <Color x:Key="StatisticsLight10">#22C373</Color>
+    <Color x:Key="StatisticsLight11">#2273C3</Color>
+    <Color x:Key="StatisticsLight12">#C32273</Color>
 
     <Color x:Key="StatisticsTotalDark">#FFFFFF</Color>
     <Color x:Key="StatisticsTotalLight">#101012</Color>

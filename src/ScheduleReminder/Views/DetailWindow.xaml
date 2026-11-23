@@ -1,6 +1,7 @@
 <Window x:Class="ScheduleReminder.Views.DetailWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:ScheduleReminder.Controls"
         Title="日程详细"
         Width="420" Height="360"
         WindowStyle="None" AllowsTransparency="True" ResizeMode="NoResize"
@@ -34,10 +35,8 @@
                                Foreground="{DynamicResource TextPrimaryBrush}" />
                     <Button HorizontalAlignment="Right" Margin="0,0,6,0"
                             Style="{StaticResource TitleBarCloseButtonStyle}" Click="OnCloseClick">
-                        <Path Data="{StaticResource IconClose}"
-                              Stroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
-                              StrokeThickness="1.5" Stretch="Uniform"
-                              Width="13" Height="13" SnapsToDevicePixels="True" />
+                        <controls:IconView Glyph="{StaticResource IconClose}" IconSize="13"
+                                           IconStroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}" />
                     </Button>
                 </Grid>
             </Border>

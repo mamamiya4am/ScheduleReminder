@@ -9,7 +9,7 @@ namespace ScheduleReminder.Domain.Statistics
     ///
     /// 口径（对应「统计数据」产品文档 v1.1）：
     ///   标签按 Schedule.TagId 归类，允许重名，不做任何名字归一化；
-    ///   TagId 为空 / null = 未分类，恒存在、必须画出、不可隐藏；
+    ///   TagId 为空 / null = 未分类，与其他标签一样按区间内数量决定是否出现；
     ///   彩色标签最多九个，第 10 个及以后并入「其他标签」，绝不并入「未分类」；
     ///   色位按各系列发生次数降序分配，并列按显示名字母序，再按 TagId 的 Ordinal 序。
     ///
@@ -52,8 +52,16 @@ namespace ScheduleReminder.Domain.Statistics
 
             if (view == StatisticsView.Completion)
             {
-                list.Add(MakeSeries(StatisticsCaliber.DoneKey, GetInt(totals, StatisticsCaliber.DoneKey)));
-                list.Add(MakeSeries(StatisticsCaliber.UndoneKey, GetInt(totals, StatisticsCaliber.UndoneKey)));
+                int doneTotal = GetInt(totals, StatisticsCaliber.DoneKey);
+                int undoneTotal = GetInt(totals, StatisticsCaliber.UndoneKey);
+                if (doneTotal > 0)
+                {
+                    list.Add(MakeSeries(StatisticsCaliber.DoneKey, doneTotal));
+                }
+                if (undoneTotal > 0)
+                {
+                    list.Add(MakeSeries(StatisticsCaliber.UndoneKey, undoneTotal));
+                }
                 AssignDisplayNames(list, view, snapshots, templates);
                 SortAndAssignPalette(list);
                 return list;

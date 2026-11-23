@@ -14,13 +14,12 @@ using ScheduleReminder.Services;
 namespace ScheduleReminder.Views
 {
     /// <summary>
-    /// 标签（预设模板）编辑窗：新建 / 编辑（删除由设置窗列表负责）。
+    /// 标签（预设模板）编辑窗：新建 / 编辑。
     ///
-    /// 标签只是一份「套用到日程上的样式预设」：本窗改的是模板本身，
-    /// 一行日程都不会被碰到；日程的样式在套用的那一刻就被拷贝走。
-    /// 因此这里保存 / 删除模板都不需要考虑「是否仍被日程使用」。
+    /// 本窗只产出编辑结果，不直接修改日程；标签的保存、删除以及推送到日程
+    /// 统一由 TagManagerWindow 处理。
     ///
-    /// 必须以 ShowDialog() 打开（保存 / 删除通过 DialogResult 回传）。
+    /// 必须以 ShowDialog() 打开（保存 / 取消通过 DialogResult 回传）。
     /// </summary>
     public partial class TagTemplateWindow : Window
     {

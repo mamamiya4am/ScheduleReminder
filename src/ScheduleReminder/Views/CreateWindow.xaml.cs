@@ -1261,6 +1261,11 @@ namespace ScheduleReminder.Views
             Close();
         }
 
+        private void OnMinimizeClick(object sender, RoutedEventArgs e)
+        {
+            WindowState = WindowState.Minimized;
+        }
+
         private void OnCloseClick(object sender, RoutedEventArgs e)
         {
             Close();

@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         xmlns:views="clr-namespace:ScheduleReminder.Views"
+        xmlns:controls="clr-namespace:ScheduleReminder.Controls"
         Title="统计数据"
         Width="865" Height="500" MinWidth="780" MinHeight="450"
         WindowStyle="None" AllowsTransparency="True" ResizeMode="CanResize"
@@ -178,17 +179,13 @@
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,6,0">
                         <Button Style="{StaticResource TitleBarIconButtonStyle}" Click="OnMinimizeClick"
                                 ToolTip="最小化">
-                            <Path Data="{StaticResource IconMinimize}"
-                                  Stroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
-                                  StrokeThickness="1.5" Stretch="Uniform"
-                                  Width="12" Height="12" SnapsToDevicePixels="True" />
+                            <controls:IconView Glyph="{StaticResource IconMinimize}" IconSize="12"
+                                               IconStroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}" />
                         </Button>
                         <Button Style="{StaticResource TitleBarCloseButtonStyle}" Click="OnCloseClick"
                                 ToolTip="关闭">
-                            <Path Data="{StaticResource IconClose}"
-                                  Stroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
-                                  StrokeThickness="1.5" Stretch="Uniform"
-                                  Width="13" Height="13" SnapsToDevicePixels="True" />
+                            <controls:IconView Glyph="{StaticResource IconClose}" IconSize="13"
+                                               IconStroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}" />
                         </Button>
                     </StackPanel>
                 </Grid>
@@ -219,7 +216,7 @@
 
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                         <StackPanel Margin="20,0,0,0">
-                            <TextBlock Text="平均" Style="{StaticResource StatsMetricLabelStyle}" />
+                            <TextBlock Text="日均" Style="{StaticResource StatsMetricLabelStyle}" />
                             <TextBlock x:Name="AverageValueText" Text="0" Style="{StaticResource StatsMetricValueStyle}" />
                         </StackPanel>
                         <StackPanel Margin="20,0,0,0">

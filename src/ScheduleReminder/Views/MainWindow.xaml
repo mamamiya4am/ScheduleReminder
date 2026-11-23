@@ -4,6 +4,7 @@
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         xmlns:converters="clr-namespace:ScheduleReminder.Converters"
         xmlns:views="clr-namespace:ScheduleReminder.Views"
+        xmlns:controls="clr-namespace:ScheduleReminder.Controls"
         Title="日程提醒"
         Width="1000" Height="700" MinWidth="880" MinHeight="615"
         WindowStyle="None" AllowsTransparency="True" ResizeMode="CanResize"
@@ -152,6 +153,7 @@
                     <TextBlock Grid.Column="2" Text="{Binding Repeat}"
                                Visibility="{Binding RepeatVisibility}"
                                VerticalAlignment="Center" Margin="8,0,0,0"
+                               TextAlignment="Right"
                                TextTrimming="CharacterEllipsis"
                                FontSize="{DynamicResource FontCaption}"
                                Foreground="{DynamicResource TextNoteBrush}" />
@@ -192,10 +194,8 @@
                                 <Button x:Name="SearchToggle" Grid.Column="0" Width="28" Height="24"
                                         Style="{StaticResource TitleBarIconButtonStyle}"
                                         ToolTip="搜索日程" Click="OnSearchToggleClick">
-                                    <Path Data="{StaticResource IconSearch}"
-                                          Stroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
-                                          StrokeThickness="2" Stretch="Uniform"
-                                          Width="13" Height="13" SnapsToDevicePixels="True" />
+                                    <controls:IconView Glyph="{StaticResource IconSearch}" IconSize="13"
+                                                       IconStroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}" />
                                 </Button>
                                 <TextBox x:Name="SearchBox" Grid.Column="1" Width="272"
                                          Visibility="Collapsed"
@@ -257,65 +257,55 @@
                         <Button x:Name="RefreshButton" Style="{StaticResource TitleBarIconButtonStyle}"
                                 Margin="0,0,3,0"
                                 ToolTip="刷新当前日程" Click="OnRefreshClick">
-                            <Path Data="{StaticResource IconRefresh}"
-                                  Stroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
-                                  StrokeThickness="1.5" Stretch="Uniform"
-                                  Width="14" Height="14" SnapsToDevicePixels="True" />
+                            <controls:IconView Glyph="{StaticResource IconRefresh}" IconSize="14"
+                                               IconStroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}" />
                         </Button>
                         <Button x:Name="PanelToggleButton" Style="{StaticResource TitleBarIconButtonStyle}"
                                 ToolTip="收起右侧栏" Click="OnPanelToggleClick">
-                            <Path x:Name="PanelToggleIcon" Data="{StaticResource IconPanelExpand}"
-                                  Stroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
-                                  StrokeThickness="1.5" Stretch="Uniform"
-                                  Width="15.5" Height="15.5" SnapsToDevicePixels="True" />
+                            <controls:IconView x:Name="PanelToggleIcon" IconSize="15.5"
+                                               IconStroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}">
+                                <controls:IconView.Style>
+                                    <Style TargetType="{x:Type controls:IconView}"
+                                           BasedOn="{StaticResource {x:Type controls:IconView}}">
+                                        <Setter Property="Glyph" Value="{StaticResource IconPanelExpand}" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Tag}"
+                                                         Value="Collapsed">
+                                                <Setter Property="Glyph" Value="{StaticResource IconPanelCollapse}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </controls:IconView.Style>
+                            </controls:IconView>
                         </Button>
                         <Button Style="{StaticResource TitleBarIconButtonStyle}"
                                 ToolTip="最小化" Click="OnMinimizeClick">
-                            <Path Data="{StaticResource IconMinimize}"
-                                  Stroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
-                                  StrokeThickness="1.5" Stretch="Uniform"
-                                  Width="13" Height="13" SnapsToDevicePixels="True" />
+                            <controls:IconView Glyph="{StaticResource IconMinimize}" IconSize="13"
+                                               IconStroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}" />
                         </Button>
-                        <!-- 最大化 / 还原：两个 Path 都在 XAML 里，C# 只改 Tag 切换显示 -->
+                        <!-- 最大化 / 还原：单个图标控件，按按钮 Tag 切换 Glyph，C# 只改 Tag -->
                         <Button x:Name="MaximizeButton" Style="{StaticResource TitleBarIconButtonStyle}"
                                 ToolTip="最大化 / 还原" Click="OnMaximizeClick">
-                            <Grid Width="13" Height="13">
-                                <Path Data="{StaticResource IconMaximize}"
-                                      Stroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
-                                      StrokeThickness="1.5" Stretch="Uniform" SnapsToDevicePixels="True">
-                                    <Path.Style>
-                                        <Style TargetType="Path">
-                                            <Setter Property="Visibility" Value="Visible" />
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Tag}" Value="Maximized">
-                                                    <Setter Property="Visibility" Value="Collapsed" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Path.Style>
-                                </Path>
-                                <Path Data="{StaticResource IconRestore}"
-                                      Stroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
-                                      StrokeThickness="1.5" Stretch="Uniform" SnapsToDevicePixels="True">
-                                    <Path.Style>
-                                        <Style TargetType="Path">
-                                            <Setter Property="Visibility" Value="Collapsed" />
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Tag}" Value="Maximized">
-                                                    <Setter Property="Visibility" Value="Visible" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Path.Style>
-                                </Path>
-                            </Grid>
+                            <controls:IconView IconSize="13"
+                                               IconStroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}">
+                                <controls:IconView.Style>
+                                    <Style TargetType="{x:Type controls:IconView}"
+                                           BasedOn="{StaticResource {x:Type controls:IconView}}">
+                                        <Setter Property="Glyph" Value="{StaticResource IconMaximize}" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Tag}"
+                                                         Value="Maximized">
+                                                <Setter Property="Glyph" Value="{StaticResource IconRestore}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </controls:IconView.Style>
+                            </controls:IconView>
                         </Button>
                         <Button Style="{StaticResource TitleBarCloseButtonStyle}"
                                 ToolTip="关闭到托盘" Click="OnCloseClick">
-                            <Path Data="{StaticResource IconClose}"
-                                  Stroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
-                                  StrokeThickness="1.5" Stretch="Uniform"
-                                  Width="13" Height="13" SnapsToDevicePixels="True" />
+                            <controls:IconView Glyph="{StaticResource IconClose}" IconSize="13"
+                                               IconStroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}" />
                         </Button>
                     </StackPanel>
                 </Grid>
@@ -329,7 +319,7 @@
                     <ColumnDefinition x:Name="TodoPanelColumn" Width="0.32*" />
                 </Grid.ColumnDefinitions>
 
-                <!-- 左列小按键区（W=44）：创建 / 统计 / 视图 / 工具 / 设置 -->
+                <!-- 左列小按键区（W=44）：创建 / 标签 / 统计 / 视图 / 工具 / 设置 -->
                 <Grid Grid.Column="0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -339,70 +329,63 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
                     <Button Grid.Row="0" Style="{StaticResource ToolButtonStyle}"
                             Margin="0,8,0,8" ToolTip="创建日程" Click="OnCreateClick">
-                        <Path Data="{StaticResource IconCalendarPlus}"
-                              Stroke="{DynamicResource IconStrokeBrush}"
-                              StrokeThickness="1.5" Stretch="Uniform"
-                              Width="16" Height="16" SnapsToDevicePixels="True" />
+                        <controls:IconView Glyph="{StaticResource IconCalendarPlus}" IconSize="16" />
                     </Button>
-                    <Button Grid.Row="4" Style="{StaticResource ToolButtonStyle}"
+                    <!-- 标签管理：打开独立管理窗（左编辑 / 右列表） -->
+                    <Button Grid.Row="1" Style="{StaticResource ToolButtonStyle}"
+                            Margin="0,0,0,8" ToolTip="标签管理" Click="OnTagManagerClick">
+                        <controls:IconView Glyph="{StaticResource IconTag}" IconSize="16" />
+                    </Button>
+                    <Button Grid.Row="6" Style="{StaticResource ToolButtonStyle}"
                             Margin="0,0,0,8" ToolTip="系统设置" Click="OnSettingsClick">
                         <!-- 图标线条色统一跟随「系统边框色」：与上方创建按钮同源（ADR-009），
                              避免两枚图标一橙一灰、常态观感不统一（用户反馈） -->
-                        <Path Data="{StaticResource IconSettings}"
-                              Stroke="{DynamicResource IconStrokeBrush}"
-                              StrokeThickness="1.5" Stretch="Uniform"
-                              Width="16" Height="16" SnapsToDevicePixels="True" />
+                        <controls:IconView Glyph="{StaticResource IconSettings}" IconSize="16" />
                     </Button>
-                    <!-- 月/周视图 -->
-                    <Button x:Name="LooseButton" Grid.Row="2" Style="{StaticResource ToolButtonStyle}"
+                    <!-- 月/周视图：图标按按钮 Tag 切换，C# 只改 Tag -->
+                    <Button x:Name="LooseButton" Grid.Row="3" Style="{StaticResource ToolButtonStyle}"
                             Margin="0,0,0,8" ToolTip="月/周视图" Click="OnToggleViewClick">
-                        <!-- 严格按 SVG 的 24×24 viewBox / stroke-width=2 绘制；Viewbox 等比缩到 16×16，线宽随比例缩放 -->
-                        <Viewbox Width="17" Height="17" Stretch="Uniform">
-                            <Canvas Width="24" Height="24">
-                                <Path x:Name="LooseIconPath"
-                                      Data="{StaticResource IconLooseLayout}"
-                                      Stroke="{DynamicResource IconStrokeBrush}"
-                                      StrokeThickness="2"
-                                      StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                                      StrokeLineJoin="Round" />
-                            </Canvas>
-                        </Viewbox>
+                        <controls:IconView IconSize="17">
+                            <controls:IconView.Style>
+                                <Style TargetType="{x:Type controls:IconView}"
+                                       BasedOn="{StaticResource {x:Type controls:IconView}}">
+                                    <Setter Property="Glyph" Value="{StaticResource IconLooseLayout}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Tag}"
+                                                     Value="week">
+                                            <Setter Property="Glyph" Value="{StaticResource IconMonthLayout}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </controls:IconView.Style>
+                        </controls:IconView>
                     </Button>
                     <!-- 统计数据：打开只读统计窗口 -->
-                    <Button x:Name="StatisticsButton" Grid.Row="1" Style="{StaticResource ToolButtonStyle}"
+                    <Button x:Name="StatisticsButton" Grid.Row="2" Style="{StaticResource ToolButtonStyle}"
                             Margin="0,0,0,8" VerticalAlignment="Top" ToolTip="统计数据"
                             Click="OnStatisticsClick">
-                        <Path Data="{StaticResource IconChart}"
-                              Stroke="{DynamicResource IconStrokeBrush}"
-                              StrokeThickness="1.5" Stretch="Uniform"
-                              StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                              StrokeLineJoin="Round"
-                              Width="15" Height="15" SnapsToDevicePixels="True" />
+                        <controls:IconView Glyph="{StaticResource IconChart}" IconSize="15" />
                     </Button>
                     <!-- 小工具集合：点开右侧面板，格子由 ToolRegistry 注册项自动生成；图标取自 工具箱.svg -->
-                    <Button x:Name="ToolBoxButton" Grid.Row="3" Style="{StaticResource ToolButtonStyle}"
+                    <Button x:Name="ToolBoxButton" Grid.Row="4" Style="{StaticResource ToolButtonStyle}"
                             Margin="0,0,0,8" VerticalAlignment="Top" ToolTip="小工具"
                             PreviewMouseLeftButtonDown="OnToolBoxPreviewMouseDown"
                             Click="OnToolBoxClick">
-                        <Viewbox Width="17" Height="17" Stretch="Uniform">
-                            <Canvas Width="24" Height="24">
-                                <Path Data="M5 9 H19 A2 2 0 0 1 21 11 V18 A2 2 0 0 1 19 20 H5 A2 2 0 0 1 3 18 V11 A2 2 0 0 1 5 9 Z M8 9 V7 A2 2 0 0 1 10 5 H14 A2 2 0 0 1 16 7 V9 M3 13.5 H21"
-                                      Stroke="{DynamicResource IconStrokeBrush}" StrokeThickness="2"
-                                      StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                                      StrokeLineJoin="Round" />
-                            </Canvas>
-                        </Viewbox>
+                        <controls:IconView Glyph="{StaticResource IconToolBox}" IconSize="17" />
                     </Button>
                     <!-- 面板控件是 0×0 的空壳，只承载弹出层，放在同一行不影响布局 -->
-                    <views:ToolBoxFlyout x:Name="ToolFlyout" Grid.Row="3"
+                    <views:ToolBoxFlyout x:Name="ToolFlyout" Grid.Row="4"
                                          VerticalAlignment="Top" HorizontalAlignment="Left" />
 
-                    <!-- 退出按钮：暂时隐藏（功能与代码保留，需要时删掉 Visibility 即可恢复） -->
-                    <Button Grid.Row="6" Content="⏻" Style="{StaticResource ToolButtonStyle}"
-                            Margin="0,0,0,14" ToolTip="退出程序" Click="OnExitClick" Visibility="Collapsed" />
+                    <!-- 退出按钮：矢量图标（IconView + IconPower），与其他左列按钮同一套图标系统 -->
+                    <Button Grid.Row="7" Style="{StaticResource ToolButtonStyle}"
+                            Margin="0,0,0,14" ToolTip="退出程序" Click="OnExitClick">
+                        <controls:IconView Glyph="{StaticResource IconPower}" IconSize="16" />
+                    </Button>
                 </Grid>
 
                 <!-- 月历区 -->
@@ -518,7 +501,7 @@
                                             <RowDefinition Height="*" />
                                         </Grid.RowDefinitions>
 
-                                        <!-- 日期号（左上，今日 = 22×22 实心圆 + 白字） + 右上小字 -->
+                                        <!-- 日期号（左上，今日为实心圆 + 黑/白自适应文字） + 右上小字 -->
                                         <Grid Grid.Row="0">
                                             <Grid HorizontalAlignment="Left" VerticalAlignment="Center"
                                                   Width="22" Height="22">

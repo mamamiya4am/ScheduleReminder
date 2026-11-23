@@ -106,7 +106,7 @@ namespace ScheduleReminder.Domain.Statistics
         /// <summary>未完成次数，等于总数减已完成。</summary>
         public int Undone { get; set; }
 
-        /// <summary>当前粒度平均值 = 总数 ÷ 当前粒度桶数。</summary>
+        /// <summary>日均 = 总数 ÷ 区间天数。</summary>
         public double Average { get; set; }
 
         /// <summary>完成率 = 已完成 ÷ 总数。</summary>

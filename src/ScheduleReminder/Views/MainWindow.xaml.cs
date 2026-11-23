@@ -18,7 +18,7 @@ using ScheduleReminder.Converters;
 namespace ScheduleReminder.Views
 {
     /// <summary>
-    /// 月历主窗口（P0-1）：自绘无边框、42 格（6 行 × 7 列）跨月显示、悬停预览（P0-2）、位置记忆、关闭到托盘。
+    /// 主窗口（P0-1）：自绘无边框、月/周视图、42 格（6 行 × 7 列）跨月显示、悬停预览（P0-2）、位置记忆、关闭到托盘。
     /// </summary>
     public partial class MainWindow : Window
     {
@@ -607,10 +607,10 @@ namespace ScheduleReminder.Views
             {
                 WeekView.Visibility = week ? Visibility.Visible : Visibility.Collapsed;
             }
-            if (LooseIconPath != null)
+            if (LooseButton != null)
             {
-                // 月视图显示「月→周」图标；周视图显示「周→月」图标
-                LooseIconPath.Data = (Geometry)FindResource(week ? "IconMonthLayout" : "IconLooseLayout");
+                // 月视图显示「月→周」图标；周视图显示「周→月」图标（Glyph 由 XAML 按 Tag 切换）
+                LooseButton.Tag = week ? "week" : "month";
             }
         }
 
@@ -1390,9 +1390,9 @@ namespace ScheduleReminder.Views
             {
                 TodoPanel.Visibility = collapsed ? Visibility.Collapsed : Visibility.Visible;
             }
-            PanelToggleIcon.Data = (Geometry)FindResource(collapsed ? "IconPanelCollapse" : "IconPanelExpand");
             if (PanelToggleButton != null)
             {
+                PanelToggleButton.Tag = collapsed ? "Collapsed" : "Expanded";
                 PanelToggleButton.ToolTip = collapsed ? "展开右侧栏" : "收起右侧栏";
             }
         }
@@ -1942,7 +1942,7 @@ namespace ScheduleReminder.Views
         }
 
         /// <summary>
-        /// 只切换按钮状态标记；最大化 / 还原两个图标都在 XAML 里，由 DataTrigger 依据 Tag 决定显示哪一个（ADR-009）。
+        /// 只切换按钮状态标记；最大化 / 还原共用一个图标控件，由 DataTrigger 依据 Tag 切换 Glyph（ADR-009）。
         /// 好处：改颜色、改缩放档、拖拽窗口都只影响 XAML，不会因代码重建图标而出错。
         /// </summary>
         private void UpdateMaximizeButtonContent()
@@ -2009,6 +2009,12 @@ namespace ScheduleReminder.Views
             window.ShowDialog();
         }
 
+        /// <summary>标签管理：打开独立管理窗（左编辑 / 右列表），非模态、最多一个。</summary>
+        private void OnTagManagerClick(object sender, RoutedEventArgs e)
+        {
+            TagManagerWindow.Open();
+        }
+
         private void OnExitClick(object sender, RoutedEventArgs e)
         {
             RequestExit();
@@ -2018,7 +2024,7 @@ namespace ScheduleReminder.Views
         public void RequestExit()
         {
             bool ok = DialogService.Confirm("退出程序",
-                "确定要退出日程提醒吗？\r\n退出后将不再提醒，直到再次启动本程序。", "退出", true);
+                "确定要退出日程提醒吗？", "退出", true);
             if (!ok)
             {
                 return;

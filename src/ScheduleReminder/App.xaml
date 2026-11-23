@@ -8,6 +8,8 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="Resources/Icons.xaml" />
                 <ResourceDictionary Source="Resources/StatisticsPalette.xaml" />
+                <!-- 自定义图标控件的默认样式；合并后窗口内的实例样式可用 BasedOn 继承它 -->
+                <ResourceDictionary Source="Themes/Generic.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
             <!-- ============ 字体 ============ -->
@@ -35,7 +37,7 @@
             <system:Double x:Key="CellPadding">6</system:Double>
 
             <!-- ============ 配色 Token ============ -->
-            <!-- 说明：所有颜色均以 SolidColorBrush 形式提供，ThemeService 会在运行时整体替换这些画笔。 -->
+            <!-- 配色 Token：多数为 SolidColorBrush；渐变高亮为 LinearGradientBrush，透明棋盘格为 DrawingBrush，ThemeService 启动时按设置替换或重建。 -->
             <SolidColorBrush x:Key="TextPrimaryBrush" Color="#F2F2F2" />
             <SolidColorBrush x:Key="TextSecondaryBrush" Color="#A8A8AE" />
             <SolidColorBrush x:Key="TextPastBrush" Color="#6E6E6E" />

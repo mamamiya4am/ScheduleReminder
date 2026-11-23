@@ -129,6 +129,7 @@ namespace ScheduleReminder.Views
                     column.Label = _result.Buckets[start].Label + "–" + _result.Buckets[end].Label;
                 }
 
+                column.Total = 0;
                 for (int i = start; i <= end; i++)
                 {
                     StatisticsBucket bucket = _result.Buckets[i];
@@ -140,15 +141,20 @@ namespace ScheduleReminder.Views
                             column.Values[pair.Key] = pair.Value;
                         }
                     }
+
+                    int bucketTotal = 0;
+                    foreach (KeyValuePair<string, int> pair in bucket.Values)
+                    {
+                        bucketTotal += pair.Value;
+                    }
+                    if (bucketTotal > column.Total)
+                    {
+                        column.Total = bucketTotal;
+                    }
                 }
 
                 double center = _plot.Left + ((start + end + 1) / 2.0) * (_plot.Width / bucketCount);
                 column.X = center;
-                column.Total = 0;
-                foreach (KeyValuePair<string, int> pair in column.Values)
-                {
-                    column.Total += pair.Value;
-                }
                 _columns.Add(column);
             }
         }
@@ -310,12 +316,15 @@ namespace ScheduleReminder.Views
                 }
                 int value;
                 column.Values.TryGetValue(series.Key, out value);
-                if (value > 0 || !series.IsUntagged)
+                if (value > 0)
                 {
                     lines.Add(series.DisplayName + "  " + value.ToString(CultureInfo.InvariantCulture));
                 }
             }
-            lines.Add("合计  " + column.Total.ToString(CultureInfo.InvariantCulture));
+            string totalLabel = column.StartIndex != column.EndIndex
+                ? "合计（列内最高）  "
+                : "合计  ";
+            lines.Add(totalLabel + column.Total.ToString(CultureInfo.InvariantCulture));
 
             double lineHeight = 17;
             double width = 170;

@@ -7,6 +7,9 @@
     <!-- 关闭 -->
     <Geometry x:Key="IconClose">M18 6 6 18 M6 6 18 18</Geometry>
 
+    <!-- 退出程序（电源符号：上方开口的圆 + 竖线），供主窗左列退出按钮使用 -->
+    <Geometry x:Key="IconPower">M12 2v10 M6.3 6.3a8 8 0 1 0 11.4 0</Geometry>
+
     <!-- 打开目录（文件夹） -->
     <Geometry x:Key="IconFolder">M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z</Geometry>
 
@@ -66,6 +69,12 @@
         <RectangleGeometry Rect="1.5,2.5,13,11" RadiusX="2" RadiusY="2" />
         <LineGeometry StartPoint="11.5,4.25" EndPoint="11.5,11.75" />
     </GeometryGroup>
+
+    <!-- 标签（吊牌：斜置牌面带左上圆孔，24×24 设计坐标） -->
+    <Geometry x:Key="IconTag">M 12.586,2.586 A 2,2 0 0 0 11.172,2 H 4 A 2,2 0 0 0 2,4 v 7.172 a 2,2 0 0 0 0.586,1.414 l 8.704,8.704 a 2.426,2.426 0 0 0 3.42,0 l 6.58,-6.58 a 2.426,2.426 0 0 0 0,-3.42 Z M 6.5,7.5 a 1,1 0 1 0 2,0 a 1,1 0 1 0 -2,0</Geometry>
+
+    <!-- 小工具（工具箱，24×24 设计坐标） -->
+    <Geometry x:Key="IconToolBox">M 5,9 H 19 A 2,2 0 0 1 21,11 V 18 A 2,2 0 0 1 19,20 H 5 A 2,2 0 0 1 3,18 V 11 A 2,2 0 0 1 5,9 Z M 8,9 V 7 A 2,2 0 0 1 10,5 H 14 A 2,2 0 0 1 16,7 V 9 M 3,13.5 H 21</Geometry>
 
     <!-- 月视图 → 周视图（icon-loose-layout.svg：24×24，stroke-width=2，rx=2）
          外框 x=3 y=4.5 w=18 h=15；竖线 x=9、15，y=4.5→19.5 -->

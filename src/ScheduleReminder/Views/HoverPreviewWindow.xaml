@@ -2,6 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:converters="clr-namespace:ScheduleReminder.Converters"
+        xmlns:controls="clr-namespace:ScheduleReminder.Controls"
         Title="日程预览"
         Width="630" Height="200"
         WindowStyle="None" AllowsTransparency="True" ResizeMode="NoResize"
@@ -130,16 +131,14 @@
                                 <TextBlock Grid.Column="4" Text="{Binding AdvanceText}" Style="{StaticResource CellTextStyle}" />
                                 <StackPanel Grid.Column="5" Orientation="Horizontal"
                                             HorizontalAlignment="Left" VerticalAlignment="Center">
-                                    <Path Data="{StaticResource IconAlarm}"
-                                          Stroke="{Binding FontColor, Converter={StaticResource ScheduleFont}}"
-                                          StrokeThickness="2" Stretch="Uniform"
-                                          Width="16" Height="16" SnapsToDevicePixels="True" Margin="2.5,0"
-                                          Visibility="{Binding RemindEnabled, Converter={StaticResource BoolToVis}}" />
-                                    <Path Data="{StaticResource IconFlag}"
-                                          Stroke="{Binding FontColor, Converter={StaticResource ScheduleFont}}"
-                                          StrokeThickness="2" Stretch="Uniform"
-                                          Width="16" Height="16" SnapsToDevicePixels="True" Margin="2.5,0"
-                                          Visibility="{Binding IsTodo, Converter={StaticResource BoolToVis}}" />
+                                    <controls:IconView Glyph="{StaticResource IconAlarm}" IconSize="16"
+                                                       IconStroke="{Binding FontColor, Converter={StaticResource ScheduleFont}}"
+                                                       Margin="2.5,0"
+                                                       Visibility="{Binding RemindEnabled, Converter={StaticResource BoolToVis}}" />
+                                    <controls:IconView Glyph="{StaticResource IconFlag}" IconSize="16"
+                                                       IconStroke="{Binding FontColor, Converter={StaticResource ScheduleFont}}"
+                                                       Margin="2.5,0"
+                                                       Visibility="{Binding IsTodo, Converter={StaticResource BoolToVis}}" />
                                 </StackPanel>
                             </Grid>
                         </Border>
